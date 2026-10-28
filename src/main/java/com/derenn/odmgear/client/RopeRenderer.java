@@ -150,18 +150,18 @@ public final class RopeRenderer {
     }
 
     private static void stepSim(RopeSim sim, Vec3 anchor, Vec3 hook, double gravity, double dt) {
-        Vec3 g = new Vec3(0, -gravity * 0.6 * dt * dt, 0);
+        Vec3 g = new Vec3(0, -gravity * 0.25 * dt * dt, 0);
         for (int i = 1; i < SEGMENTS; i++) {
             Vec3 cur = sim.p[i];
-            Vec3 vel = cur.subtract(sim.prev[i]).scale(0.94);
+            Vec3 vel = cur.subtract(sim.prev[i]).scale(0.86);
             sim.prev[i] = cur;
             sim.p[i] = cur.add(vel).add(g);
         }
         sim.p[0] = anchor;
         sim.p[SEGMENTS] = hook;
         // the rope can't stretch beyond a slightly slack straight line, but it may sag / bunch up
-        double rest = anchor.distanceTo(hook) * 1.03 / SEGMENTS;
-        for (int it = 0; it < 8; it++) {
+        double rest = anchor.distanceTo(hook) * 1.01 / SEGMENTS;
+        for (int it = 0; it < 12; it++) {
             for (int i = 0; i < SEGMENTS; i++) {
                 Vec3 a = sim.p[i];
                 Vec3 b = sim.p[i + 1];
@@ -182,6 +182,13 @@ public final class RopeRenderer {
                     sim.p[i + 1] = b.subtract(corr.scale(0.5));
                 }
             }
+        }
+        // stiff cable: the hook end stays nearly straight, bending happens mostly near the player
+        for (int i = 1; i < SEGMENTS; i++) {
+            double t = (double) i / SEGMENTS;
+            Vec3 straight = anchor.lerp(hook, t);
+            double w = Math.pow(t, 0.7) * 0.35;
+            sim.p[i] = sim.p[i].lerp(straight, w);
         }
     }
 

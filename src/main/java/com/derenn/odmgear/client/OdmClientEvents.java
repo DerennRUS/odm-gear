@@ -199,8 +199,8 @@ public final class OdmClientEvents {
         g.drawString(mc.font, ">", cx + 10, cy - 4, ODM.rightInRange ? 0x55FF55 : 0xFF5555, true);
         if (OdmConfig.speedometer()) {
             double speed = ODM.displaySpeed(p);
-            int color = speed > 120 ? 0xFF6060 : 0xFFFFFF;
-            g.drawCenteredString(mc.font, String.format("%.0f", speed), cx, cy + 10, color);
+            int color = speed >= OdmPhysics.MAX_SPEED - 0.5 ? 0xFF6060 : 0xFFFFFF;
+            g.drawCenteredString(mc.font, String.format("%.1f u/s", speed), cx, cy + 10, color);
         }
     }
 }

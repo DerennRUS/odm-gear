@@ -49,6 +49,12 @@ public final class OdmPhysics {
     /** Run speed stat 110 / 10. Landing faster than RunSpeed*sqrt(1.5) slides; slide ends below RunSpeed*1.2. */
     static final double RUN_SPEED = 11.0;
     static final double FIXED_STEP = 0.02;
+    /** Speed limit (AoTTG units/s). */
+    static final double MAX_SPEED = 250.0;
+    /** Without gas the speed slowly fades by this much per second (AoTTG units/s^2). */
+    static final double COAST_DECAY = 10.0;
+    /** How fast reel in/out blends in (1/s), so reeling turns your momentum instead of snapping it. */
+    static final double REEL_RESPONSE = 5.0;
 
     static final int SUBSTEPS = 5;
     static final double TICK = 0.05;
@@ -70,6 +76,7 @@ public final class OdmPhysics {
     private double dashTimeLeft;
     private double originalDashSpeed;
     private int reelInSteps;
+    private double reelSmooth;
     private double reelOutTime;
     public boolean gasInUse;
 
@@ -258,6 +265,7 @@ public final class OdmPhysics {
             }
 
             double reelAxis = reelInSteps > 0 || reelInKey ? -1 : (reelOutTime > 0 || reelOutKey ? 1 : 0);
+            reelSmooth += (reelAxis - reelSmooth) * Math.min(1.0, REEL_RESPONSE * DT);
 
             if (physicsActive) {
                 Vec3 acc = Vec3.ZERO;
@@ -290,10 +298,17 @@ public final class OdmPhysics {
                 }
                 boolean pivot = pivotL || pivotR;
 
-                // free gas (no pivot): accelerate toward WASD direction or straight ahead
+                // free gas (no pivot): accelerate toward the pressed WASD direction (relative to the camera);
+                // with no direction keys it just boosts along the current horizontal motion
                 if (!pivot && gas && !sliding && dashTimeLeft <= DASH_TIME - 0.25) {
-                    Vec3 d = inputDir != null ? inputDir : forwardVector(p.getYRot());
-                    acc = acc.add(d.scale(GAS_ACCEL * s));
+                    Vec3 d = inputDir;
+                    if (d == null) {
+                        Vec3 h = new Vec3(vel.x, 0, vel.z);
+                        d = h.lengthSqr() > 1.0E-4 ? h.normalize() : null;
+                    }
+                    if (d != null) {
+                        acc = acc.add(d.scale(GAS_ACCEL * s));
+                    }
                     gasInUse = true;
                 }
                 // dash slowdown back to the pre-dash speed
@@ -305,7 +320,7 @@ public final class OdmPhysics {
                     Vec3 target = pivotL && pivotR ? leftHook.pos.add(rightHook.pos).scale(0.5)
                             : (pivotL ? leftHook.pos : rightHook.pos);
                     double newSpeed = vel.length() + PIVOT_SPEED_GAIN_PER_STEP * s * (DT / FIXED_STEP);
-                    double reel = Mth.clamp(reelAxis, -0.8, 0.8) + 1.0;
+                    double reel = Mth.clamp(reelSmooth, -0.8, 0.8) + 1.0;
                     Vec3 toHook = target.subtract(c);
                     if (toHook.lengthSqr() > 1.0E-6) {
                         Vec3 cur = vel.lengthSqr() > 1.0E-8 ? vel.normalize() : toHook.normalize();
@@ -319,6 +334,16 @@ public final class OdmPhysics {
                 acc = acc.add(0, -GRAVITY * s * (lower ? 0.5 : 1.0), 0);
 
                 vel = vel.add(acc.scale(DT));
+                // coasting: speed fades slowly while gas is not used; hard speed limit
+                double speed = vel.length();
+                if (!gas && !sliding && speed > 1.0E-6) {
+                    double ns = Math.max(0, speed - COAST_DECAY * s * DT);
+                    vel = vel.scale(ns / speed);
+                    speed = ns;
+                }
+                if (speed > MAX_SPEED * s) {
+                    vel = vel.scale(MAX_SPEED * s / speed);
+                }
                 if (sliding) {
                     double k = Math.pow(0.99, DT / FIXED_STEP);
                     vel = new Vec3(vel.x * k, vel.y, vel.z * k);
