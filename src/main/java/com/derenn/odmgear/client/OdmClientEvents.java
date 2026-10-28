@@ -157,6 +157,8 @@ public final class OdmClientEvents {
         if (OdmKeys.HOOK_RIGHT.matchesMouse(b)) { ODM.pressedRight = true; used = true; }
         if (OdmKeys.HOOK_BOTH.matchesMouse(b)) { ODM.pressedBoth = true; used = true; }
         if (OdmKeys.GAS.matchesMouse(b)) { ODM.pressedGas = true; used = true; }
+        if (OdmKeys.REEL_IN.matchesMouse(b)) { ODM.onScroll(-1); used = true; }
+        if (OdmKeys.REEL_OUT.matchesMouse(b)) { ODM.onScroll(1); used = true; }
         if (used) {
             event.setCanceled(true); // don't also attack / use items
         }

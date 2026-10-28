@@ -11,7 +11,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.lwjgl.glfw.GLFW;
 
-/** Default binds follow AoTTG2: Q/E hooks, LShift gas, LCtrl dash, wheel = reel. */
+/** Default binds: Q/E hooks, LShift gas, LCtrl dash, RMB reel in, LAlt reel out (wheel also reels). */
 @Mod.EventBusSubscriber(modid = OdmMod.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class OdmKeys {
     public static final String CATEGORY = "key.categories.odmgear";
@@ -21,8 +21,8 @@ public final class OdmKeys {
     public static final KeyMapping HOOK_BOTH = key("hook_both", -1);
     public static final KeyMapping GAS = key("gas", GLFW.GLFW_KEY_LEFT_SHIFT);
     public static final KeyMapping DASH = key("dash", GLFW.GLFW_KEY_LEFT_CONTROL);
-    public static final KeyMapping REEL_IN = key("reel_in", -1);
-    public static final KeyMapping REEL_OUT = key("reel_out", -1);
+    public static final KeyMapping REEL_IN = mouse("reel_in", GLFW.GLFW_MOUSE_BUTTON_RIGHT);
+    public static final KeyMapping REEL_OUT = key("reel_out", GLFW.GLFW_KEY_LEFT_ALT);
     public static final KeyMapping TOGGLE = key("toggle", GLFW.GLFW_KEY_G);
 
     public static final KeyMapping[] ACTION_KEYS = {HOOK_LEFT, HOOK_RIGHT, HOOK_BOTH, GAS, DASH, REEL_IN, REEL_OUT};
@@ -33,6 +33,10 @@ public final class OdmKeys {
     private static KeyMapping key(String name, int glfwKey) {
         InputConstants.Key k = glfwKey < 0 ? InputConstants.UNKNOWN : InputConstants.Type.KEYSYM.getOrCreate(glfwKey);
         return new KeyMapping("key.odmgear." + name, KeyConflictContext.IN_GAME, k, CATEGORY);
+    }
+
+    private static KeyMapping mouse(String name, int button) {
+        return new KeyMapping("key.odmgear." + name, KeyConflictContext.IN_GAME, InputConstants.Type.MOUSE.getOrCreate(button), CATEGORY);
     }
 
     @SubscribeEvent
