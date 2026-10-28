@@ -32,7 +32,9 @@ public final class OdmPhysics {
     /** Without gas, gravity grows by this much per second (AoTTG units/s^2 per s) up to vanilla gravity. */
     static final double GRAVITY_RAMP = 10.0;
     /** Gas + W: extra vertical thrust by camera pitch, up to +25 looking straight up / +10 looking straight down. */
-    static final double PITCH_LIFT_MAX = 50.0; // looking up or down both push upward
+    /** Shift + W with a hook attached: upward thrust by camera pitch, 0..35 looking up, 0..10 looking down. */
+    static final double PITCH_LIFT_UP = 35.0;
+    static final double PITCH_LIFT_DOWN = 10.0;
     /** On attach the rope snaps in: +50 toward the hook until 10% of the initial rope length is reeled in. */
     static final double SNAP_ACCEL = 50.0;
     static final double SNAP_FRACTION = 0.10;
@@ -359,9 +361,9 @@ public final class OdmPhysics {
                 // vertical gas thrust: lift while gas is held, and W pushes along the camera pitch
                 if (gas && !sliding) {
                     double up = GAS_LIFT + (anyHooked() ? GAS_LIFT_HOOKED : 0);
-                    if (wHeld) {
+                    if (wHeld && anyHooked()) {
                         float pitch = p.getXRot(); // -90 = straight up, +90 = straight down
-                        up += PITCH_LIFT_MAX * (Math.abs(pitch) / 90.0);
+                        up += (pitch < 0 ? PITCH_LIFT_UP : PITCH_LIFT_DOWN) * (Math.abs(pitch) / 90.0);
                     }
                     acc = acc.add(0, up * s, 0);
                 }
