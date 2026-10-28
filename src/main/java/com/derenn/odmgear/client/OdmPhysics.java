@@ -266,7 +266,7 @@ public final class OdmPhysics {
             }
 
             double reelAxis = reelInSteps > 0 || reelInKey ? -1 : (reelOutTime > 0 || reelOutKey ? 1 : 0);
-            reelSmooth += (reelAxis - reelSmooth) * Math.min(1.0, REEL_RESPONSE * DT);
+            reelSmooth = reelAxis; // instant response, as in AoTTG
 
             if (physicsActive) {
                 Vec3 acc = Vec3.ZERO;
