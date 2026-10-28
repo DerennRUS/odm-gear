@@ -109,6 +109,7 @@ public final class TerrainDump {
                 }
                 ImageIO.write(sec, "png", new File(dir, "section_" + k + ".png"));
             }
+            debrisStats(gen, level, rs, dir);
             BlockPos spawn = level.getSharedSpawnPos();
             OdmModLog.info("Terrain dump written, spawn at " + spawn);
         } catch (Exception e) {
@@ -117,6 +118,73 @@ public final class TerrainDump {
         server.halt(false);
     }
 
+
+    /** Counts disconnected solid pieces in a 160x160 column area by size (6-neighbour flood fill). */
+    private static void debrisStats(ChunkGenerator gen, ServerLevel level, RandomState rs, File dir) throws Exception {
+        int n = 160;
+        int minY = level.getMinBuildHeight();
+        int hgt = level.getMaxBuildHeight() - minY;
+        boolean[] solid = new boolean[n * n * hgt];
+        for (int x = 0; x < n; x++) {
+            for (int z = 0; z < n; z++) {
+                NoiseColumn col = gen.getBaseColumn(x + 1000, z + 1000, level, rs);
+                for (int y = 0; y < hgt; y++) {
+                    BlockState st = col.getBlock(y + minY);
+                    solid[(x * n + z) * hgt + y] = !st.isAir() && st.getFluidState().isEmpty();
+                }
+            }
+        }
+        boolean[] seen = new boolean[solid.length];
+        int[] stack = new int[solid.length];
+        int[] bins = new int[6];
+        int[] limits = {1, 30, 100, 500, 5000, Integer.MAX_VALUE};
+        long floatingVolume = 0;
+        for (int start = 0; start < solid.length; start++) {
+            if (!solid[start] || seen[start]) {
+                continue;
+            }
+            int sp = 0;
+            stack[sp++] = start;
+            seen[start] = true;
+            int size = 0;
+            boolean touchesBottom = false;
+            boolean touchesEdge = false;
+            while (sp > 0) {
+                int i = stack[--sp];
+                size++;
+                int y = i % hgt;
+                int xz = i / hgt;
+                int z = xz % n;
+                int x = xz / n;
+                if (y < 8) touchesBottom = true;
+                if (x == 0 || z == 0 || x == n - 1 || z == n - 1) touchesEdge = true;
+                int[] nb = {
+                        y > 0 ? i - 1 : -1, y < hgt - 1 ? i + 1 : -1,
+                        z > 0 ? i - hgt : -1, z < n - 1 ? i + hgt : -1,
+                        x > 0 ? i - n * hgt : -1, x < n - 1 ? i + n * hgt : -1};
+                for (int j : nb) {
+                    if (j >= 0 && solid[j] && !seen[j]) {
+                        seen[j] = true;
+                        stack[sp++] = j;
+                    }
+                }
+            }
+            if (touchesBottom || touchesEdge) {
+                continue;
+            }
+            floatingVolume += size;
+            for (int b = 0; b < limits.length; b++) {
+                if (size <= limits[b]) {
+                    bins[b]++;
+                    break;
+                }
+            }
+        }
+        String stats = "floating pieces fully inside 160x160 area: single=" + bins[0] + " 2-30=" + bins[1] + " 31-100=" + bins[2]
+                + " 101-500=" + bins[3] + " 501-5000=" + bins[4] + " >5000=" + bins[5] + " floatingVolume=" + floatingVolume;
+        java.nio.file.Files.writeString(new File(dir, "stats.txt").toPath(), stats + "\n");
+        OdmModLog.info(stats);
+    }
 
     private static int clamp(double v) {
         return (int) Math.max(0, Math.min(255, v));
