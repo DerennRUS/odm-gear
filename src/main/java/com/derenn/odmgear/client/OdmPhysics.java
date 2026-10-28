@@ -31,6 +31,12 @@ public final class OdmPhysics {
     static final double VANILLA_GRAVITY_BLOCKS = 32.0;
     /** Without gas, gravity grows by this much per second (AoTTG units/s^2 per s) up to vanilla gravity. */
     static final double GRAVITY_RAMP = 10.0;
+    /** Gas + W: extra vertical thrust by camera pitch, up to +25 looking straight up / +10 looking straight down. */
+    static final double PITCH_UP_MAX = 25.0;
+    static final double PITCH_DOWN_MAX = 10.0;
+    /** Gas held: constant upward thrust; +5 more while a hook is attached. */
+    static final double GAS_LIFT = 10.0;
+    static final double GAS_LIFT_HOOKED = 5.0;
     /** Rigidbody mass = 0.5 - (acceleration - 100) * 0.001 with the default acceleration stat 115. */
     static final double MASS = 0.485;
     /** Rope pull force per hook: 10 when both hooks pull, 20 when only one pulls (ForceMode.Force). */
@@ -169,6 +175,7 @@ public final class OdmPhysics {
         boolean jumpPressed = !screen && gasEdge;
         clearPressed();
         Vec3 inputDir = screen ? null : inputDirection(mc, p);
+        boolean wHeld = !screen && mc.options.keyUp.isDown();
 
         Vec3 pos = p.position();
         // velocity the player actually had over the last tick (works for vanilla movement too)
@@ -345,6 +352,15 @@ public final class OdmPhysics {
                         }
                     }
                     gasInUse = true;
+                }
+                // vertical gas thrust: lift while gas is held, and W pushes along the camera pitch
+                if (gas && !sliding) {
+                    double up = GAS_LIFT + (anyHooked() ? GAS_LIFT_HOOKED : 0);
+                    if (wHeld) {
+                        float pitch = p.getXRot(); // -90 = straight up, +90 = straight down
+                        up += pitch < 0 ? PITCH_UP_MAX * (-pitch / 90.0) : -PITCH_DOWN_MAX * (pitch / 90.0);
+                    }
+                    acc = acc.add(0, up * s, 0);
                 }
                 // dash slowdown back to the pre-dash speed
                 if (dashTimeLeft > 0 && vel.length() > originalDashSpeed) {
