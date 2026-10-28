@@ -48,6 +48,9 @@ public final class Hook {
     /** Incremented on each attach so the renderer knows to start a new rope simulation. */
     public int attachId;
     public Vec3 flightDir = new Vec3(0, 1, 0);
+    /** Rope snap right after attaching (see OdmPhysics.SNAP_ACCEL). */
+    public boolean snapping;
+    public double snapTarget;
 
     public Hook(boolean left) {
         this.left = left;
@@ -124,6 +127,7 @@ public final class Hook {
     }
 
     public void release() {
+        snapping = false;
         state = State.IDLE;
         launch = false;
         hookedBlock = null;

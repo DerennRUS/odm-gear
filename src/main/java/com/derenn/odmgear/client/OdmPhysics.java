@@ -32,8 +32,10 @@ public final class OdmPhysics {
     /** Without gas, gravity grows by this much per second (AoTTG units/s^2 per s) up to vanilla gravity. */
     static final double GRAVITY_RAMP = 10.0;
     /** Gas + W: extra vertical thrust by camera pitch, up to +25 looking straight up / +10 looking straight down. */
-    static final double PITCH_UP_MAX = 25.0;
-    static final double PITCH_DOWN_MAX = 10.0;
+    static final double PITCH_LIFT_MAX = 50.0; // looking up or down both push upward
+    /** On attach the rope snaps in: +50 toward the hook until 10% of the initial rope length is reeled in. */
+    static final double SNAP_ACCEL = 50.0;
+    static final double SNAP_FRACTION = 0.10;
     /** Gas held: constant upward thrust; +5 more while a hook is attached. */
     static final double GAS_LIFT = 10.0;
     static final double GAS_LIFT_HOOKED = 5.0;
@@ -326,6 +328,7 @@ public final class OdmPhysics {
                     }
                 }
                 boolean pivot = pivotL || pivotR;
+                acc = acc.add(snapAccel(c, s));
 
                 // free gas (no pivot): accelerate toward the pressed WASD direction (relative to the camera);
                 // with no direction keys it just boosts along the current horizontal motion
@@ -358,7 +361,7 @@ public final class OdmPhysics {
                     double up = GAS_LIFT + (anyHooked() ? GAS_LIFT_HOOKED : 0);
                     if (wHeld) {
                         float pitch = p.getXRot(); // -90 = straight up, +90 = straight down
-                        up += pitch < 0 ? PITCH_UP_MAX * (-pitch / 90.0) : -PITCH_DOWN_MAX * (pitch / 90.0);
+                        up += PITCH_LIFT_MAX * (Math.abs(pitch) / 90.0);
                     }
                     acc = acc.add(0, up * s, 0);
                 }
@@ -455,6 +458,28 @@ public final class OdmPhysics {
         return leftHook.isPulling() || rightHook.isPulling();
     }
 
+    /** Rope snap after attaching: pulls toward the hook until the rope got 10% shorter. */
+    private Vec3 snapAccel(Vec3 c, double s) {
+        Vec3 total = Vec3.ZERO;
+        for (Hook h : new Hook[]{leftHook, rightHook}) {
+            if (!h.snapping) {
+                continue;
+            }
+            if (!h.isHooked()) {
+                h.snapping = false;
+                continue;
+            }
+            Vec3 d = h.pos.subtract(c);
+            double dist = d.length();
+            if (dist <= h.snapTarget || dist < 1.0E-6) {
+                h.snapping = false;
+                continue;
+            }
+            total = total.add(d.scale(SNAP_ACCEL * s / dist));
+        }
+        return total;
+    }
+
     /** On the ground AoTTG cancels horizontal motion; we leave the ground once the rope's upward pull beats gravity. */
     private boolean liftsOff(Vec3 c, double s) {
         boolean both = leftHook.launch && rightHook.launch;
@@ -474,6 +499,7 @@ public final class OdmPhysics {
                 lower = true;
             }
         }
+        ay += snapAccel(c, s).y;
         return ay > GRAVITY * s * (lower ? 0.5 : 1.0);
     }
 
@@ -492,6 +518,9 @@ public final class OdmPhysics {
     }
 
     private void onHookAttached(LocalPlayer p, Hook h) {
+        double len = h.pos.distanceTo(p.position().add(0, p.getBbHeight() * 0.5, 0));
+        h.snapTarget = len * (1.0 - SNAP_FRACTION);
+        h.snapping = true;
         p.level().playLocalSound(h.pos.x, h.pos.y, h.pos.z, SoundEvents.CHAIN_HIT, SoundSource.PLAYERS, 0.8f, 1.2f, false);
     }
 
