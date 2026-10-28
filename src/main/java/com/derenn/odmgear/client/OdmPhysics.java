@@ -50,9 +50,18 @@ public final class OdmPhysics {
     static final double RUN_SPEED = 11.0;
     static final double FIXED_STEP = 0.02;
     /** Speed limit (AoTTG units/s). */
-    static final double MAX_SPEED = 250.0;
+    static final double MAX_SPEED = 125.0;
     /** Without gas the speed slowly fades by this much per second (AoTTG units/s^2). */
-    static final double COAST_DECAY = 10.0;
+    static final double COAST_DECAY = 20.0;
+    /** Gas acceleration (AoTTG units/s^2) depending on current speed: 10 up to 50, 5 up to 75, 3 up to 100, 1 up to 125. */
+    static double gasAccel(double speedUnits) {
+        if (speedUnits < 50) return 10.0;
+        if (speedUnits < 75) return 5.0;
+        if (speedUnits < 100) return 3.0;
+        if (speedUnits < MAX_SPEED) return 1.0;
+        return 0.0;
+    }
+
     /** How fast reel in/out blends in (1/s), so reeling turns your momentum instead of snapping it. */
     static final double REEL_RESPONSE = 14.0;
 
@@ -308,7 +317,7 @@ public final class OdmPhysics {
                         d = h.lengthSqr() > 1.0E-4 ? h.normalize() : null;
                     }
                     if (d != null) {
-                        acc = acc.add(d.scale(GAS_ACCEL * s));
+                        acc = acc.add(d.scale(gasAccel(vel.length() / s) * s));
                     }
                     gasInUse = true;
                 }
@@ -320,7 +329,8 @@ public final class OdmPhysics {
                 if (pivot) {
                     Vec3 target = pivotL && pivotR ? leftHook.pos.add(rightHook.pos).scale(0.5)
                             : (pivotL ? leftHook.pos : rightHook.pos);
-                    double newSpeed = vel.length() + PIVOT_SPEED_GAIN_PER_STEP * s * (DT / FIXED_STEP);
+                    // on the rope gas adds half of the free-flight acceleration
+                    double newSpeed = vel.length() + gasAccel(vel.length() / s) * 0.5 * s * DT;
                     double reel = Mth.clamp(reelSmooth, -0.8, 0.8) + 1.0;
                     Vec3 toHook = target.subtract(c);
                     if (toHook.lengthSqr() > 1.0E-6) {
