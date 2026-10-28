@@ -1,0 +1,26 @@
+modLoader="javafml"
+loaderVersion="[47,)"
+license="MIT"
+
+[[mods]]
+modId="odmgear"
+version="0.1.0"
+displayName="ODM Gear (AoTTG2 physics)"
+authors="DerennRUS"
+description='''
+Omni-directional mobility gear with physics ported from Attack on Titan Tribute Game 2.
+'''
+
+[[dependencies.odmgear]]
+    modId="forge"
+    mandatory=true
+    versionRange="[47,)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.odmgear]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="[1.20.1,1.21)"
+    ordering="NONE"
+    side="BOTH"

@@ -1,0 +1,14 @@
+{
+  "item.odmgear.odm_gear": "ODM Gear",
+  "key.categories.odmgear": "ODM Gear",
+  "key.odmgear.hook_left": "Left hook",
+  "key.odmgear.hook_right": "Right hook",
+  "key.odmgear.hook_both": "Both hooks",
+  "key.odmgear.gas": "Gas",
+  "key.odmgear.dash": "Gas burst (dash)",
+  "key.odmgear.reel_in": "Reel in",
+  "key.odmgear.reel_out": "Reel out",
+  "key.odmgear.toggle": "Toggle ODM gear",
+  "msg.odmgear.on": "ODM gear: ON",
+  "msg.odmgear.off": "ODM gear: OFF"
+}

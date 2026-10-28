@@ -1,0 +1,14 @@
+{
+  "item.odmgear.odm_gear": "УПМ",
+  "key.categories.odmgear": "УПМ",
+  "key.odmgear.hook_left": "Левый крюк",
+  "key.odmgear.hook_right": "Правый крюк",
+  "key.odmgear.hook_both": "Оба крюка",
+  "key.odmgear.gas": "Газ",
+  "key.odmgear.dash": "Рывок газом",
+  "key.odmgear.reel_in": "Подмотка (на себя)",
+  "key.odmgear.reel_out": "Отмотка (от себя)",
+  "key.odmgear.toggle": "Вкл/выкл УПМ",
+  "msg.odmgear.on": "УПМ: включено",
+  "msg.odmgear.off": "УПМ: выключено"
+}

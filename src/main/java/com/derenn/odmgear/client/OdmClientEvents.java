@@ -1,0 +1,248 @@
+package com.derenn.odmgear.client;
+
+import com.derenn.odmgear.OdmConfig;
+import com.derenn.odmgear.OdmMod;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.player.Input;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.InputEvent;
+import net.minecraftforge.client.event.MovementInputUpdateEvent;
+import net.minecraftforge.client.event.RenderGuiEvent;
+import net.minecraftforge.client.event.RenderLevelStageEvent;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.LogicalSide;
+import net.minecraftforge.fml.common.Mod;
+import org.joml.Matrix3f;
+import org.joml.Matrix4f;
+import org.lwjgl.glfw.GLFW;
+
+@Mod.EventBusSubscriber(modid = OdmMod.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
+public final class OdmClientEvents {
+    private static final OdmPhysics ODM = OdmPhysics.INSTANCE;
+    private static final long DOUBLE_TAP_NS = 200_000_000L;
+    private static final long[] lastTap = new long[4];
+
+    private OdmClientEvents() {
+    }
+
+    private static boolean active() {
+        Minecraft mc = Minecraft.getInstance();
+        return mc.player != null && mc.screen == null && ODM.isUsable(mc.player);
+    }
+
+    // ------------------------------------------------------------------ ticking
+
+    @SubscribeEvent
+    public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END || event.side != LogicalSide.CLIENT) {
+            return;
+        }
+        Minecraft mc = Minecraft.getInstance();
+        if (event.player != mc.player || mc.player == null) {
+            return;
+        }
+        ODM.tick(mc.player, mc);
+    }
+
+    /** Swallow vanilla actions that share a key with ODM controls (Q drop, E inventory, F swap...). */
+    @SubscribeEvent
+    public static void onClientTick(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.START || !active()) {
+            return;
+        }
+        Minecraft mc = Minecraft.getInstance();
+        KeyMapping[] vanilla = {mc.options.keyDrop, mc.options.keyInventory, mc.options.keySwapOffhand, mc.options.keyPickItem};
+        for (KeyMapping v : vanilla) {
+            for (KeyMapping mine : OdmKeys.ACTION_KEYS) {
+                if (OdmKeys.sameKey(mine, v)) {
+                    while (v.consumeClick()) {
+                        // discard
+                    }
+                }
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public static void onMovementInput(MovementInputUpdateEvent event) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || !ODM.isUsable(mc.player)) {
+            return;
+        }
+        Input input = event.getInput();
+        if (OdmKeys.sameKey(OdmKeys.GAS, mc.options.keyShift)) {
+            input.shiftKeyDown = false;
+        }
+        if (ODM.physicsActive) {
+            // no vanilla air control: AoTTG only steers with gas
+            input.leftImpulse = 0;
+            input.forwardImpulse = 0;
+            input.jumping = false;
+        }
+    }
+
+    // ------------------------------------------------------------------ input
+
+    @SubscribeEvent
+    public static void onKey(InputEvent.Key event) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.screen != null || event.getAction() != GLFW.GLFW_PRESS) {
+            return;
+        }
+        int key = event.getKey();
+        int scan = event.getScanCode();
+        if (OdmKeys.TOGGLE.matches(key, scan) && OdmMod.hasGear(mc.player)) {
+            ODM.toggle(mc.player);
+            return;
+        }
+        if (!ODM.isUsable(mc.player)) {
+            return;
+        }
+        if (OdmKeys.HOOK_LEFT.matches(key, scan)) ODM.pressedLeft = true;
+        if (OdmKeys.HOOK_RIGHT.matches(key, scan)) ODM.pressedRight = true;
+        if (OdmKeys.HOOK_BOTH.matches(key, scan)) ODM.pressedBoth = true;
+        if (OdmKeys.GAS.matches(key, scan)) ODM.pressedGas = true;
+        if (OdmKeys.REEL_IN.matches(key, scan)) ODM.onScroll(-1);
+        if (OdmKeys.REEL_OUT.matches(key, scan)) ODM.onScroll(1);
+
+        // Dash: dash key + direction, or double tap of a direction (AoTTG DashDoubleTap)
+        LocalPlayer p = mc.player;
+        KeyMapping[] dirs = {mc.options.keyUp, mc.options.keyDown, mc.options.keyRight, mc.options.keyLeft};
+        double[][] fr = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+        if (OdmKeys.DASH.matches(key, scan)) {
+            for (int i = 0; i < 4; i++) {
+                if (dirs[i].isDown() || dirs[i].matches(key, scan)) {
+                    ODM.pendingDash = dashDir(p, fr[i]);
+                    break;
+                }
+            }
+        }
+        for (int i = 0; i < 4; i++) {
+            if (dirs[i].matches(key, scan)) {
+                long now = System.nanoTime();
+                if (OdmKeys.held(OdmKeys.DASH)) {
+                    ODM.pendingDash = dashDir(p, fr[i]);
+                } else if (now - lastTap[i] < DOUBLE_TAP_NS && !p.onGround()) {
+                    ODM.pendingDash = dashDir(p, fr[i]);
+                    lastTap[i] = 0;
+                    continue;
+                }
+                lastTap[i] = now;
+            }
+        }
+    }
+
+    private static Vec3 dashDir(LocalPlayer p, double[] fr) {
+        return OdmPhysics.forwardVector(p.getYRot()).scale(fr[0])
+                .add(OdmPhysics.rightVector(p.getYRot()).scale(fr[1])).normalize();
+    }
+
+    @SubscribeEvent
+    public static void onMouseButton(InputEvent.MouseButton.Pre event) {
+        if (!active() || event.getAction() != GLFW.GLFW_PRESS) {
+            return;
+        }
+        int b = event.getButton();
+        boolean used = false;
+        if (OdmKeys.HOOK_LEFT.matchesMouse(b)) { ODM.pressedLeft = true; used = true; }
+        if (OdmKeys.HOOK_RIGHT.matchesMouse(b)) { ODM.pressedRight = true; used = true; }
+        if (OdmKeys.HOOK_BOTH.matchesMouse(b)) { ODM.pressedBoth = true; used = true; }
+        if (OdmKeys.GAS.matchesMouse(b)) { ODM.pressedGas = true; used = true; }
+        if (used) {
+            event.setCanceled(true); // don't also attack / use items
+        }
+    }
+
+    @SubscribeEvent
+    public static void onScroll(InputEvent.MouseScrollingEvent event) {
+        if (!active()) {
+            return;
+        }
+        ODM.onScroll(event.getScrollDelta());
+        event.setCanceled(true); // the wheel reels instead of switching hotbar slots
+    }
+
+    // ------------------------------------------------------------------ rendering
+
+    @SubscribeEvent
+    public static void onRenderLevel(RenderLevelStageEvent event) {
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) {
+            return;
+        }
+        Minecraft mc = Minecraft.getInstance();
+        LocalPlayer p = mc.player;
+        if (p == null || (!ODM.leftHook.isVisible() && !ODM.rightHook.isVisible())) {
+            return;
+        }
+        float pt = event.getPartialTick();
+        Vec3 cam = event.getCamera().getPosition();
+        PoseStack ps = event.getPoseStack();
+        MultiBufferSource.BufferSource buffers = mc.renderBuffers().bufferSource();
+        VertexConsumer vc = buffers.getBuffer(RenderType.lines());
+        ps.pushPose();
+        ps.translate(-cam.x, -cam.y, -cam.z);
+        Matrix4f pose = ps.last().pose();
+        Matrix3f normal = ps.last().normal();
+        Vec3 feet = p.getPosition(pt);
+        float yaw = p.getViewYRot(pt);
+        for (Hook h : new Hook[]{ODM.leftHook, ODM.rightHook}) {
+            if (!h.isVisible()) {
+                continue;
+            }
+            Vec3 a = OdmPhysics.anchor(feet, p.getBbHeight(), yaw, h.left);
+            Vec3 b = h.state == Hook.State.FLYING ? h.prevPos.lerp(h.pos, pt) : h.pos;
+            rope(vc, pose, normal, a, b);
+        }
+        ps.popPose();
+        buffers.endBatch(RenderType.lines());
+    }
+
+    private static void rope(VertexConsumer vc, Matrix4f pose, Matrix3f normal, Vec3 a, Vec3 b) {
+        Vec3 d = b.subtract(a);
+        double len = d.length();
+        if (len < 1.0E-4) {
+            return;
+        }
+        Vec3 n = d.scale(1.0 / len);
+        vc.vertex(pose, (float) a.x, (float) a.y, (float) a.z).color(25, 25, 25, 255)
+                .normal(normal, (float) n.x, (float) n.y, (float) n.z).endVertex();
+        vc.vertex(pose, (float) b.x, (float) b.y, (float) b.z).color(25, 25, 25, 255)
+                .normal(normal, (float) n.x, (float) n.y, (float) n.z).endVertex();
+    }
+
+    @SubscribeEvent
+    public static void onRenderGui(RenderGuiEvent.Post event) {
+        Minecraft mc = Minecraft.getInstance();
+        LocalPlayer p = mc.player;
+        if (p == null || mc.options.hideGui) {
+            return;
+        }
+        GuiGraphics g = event.getGuiGraphics();
+        int cx = mc.getWindow().getGuiScaledWidth() / 2;
+        int cy = mc.getWindow().getGuiScaledHeight() / 2;
+        if (ODM.hasGearButDisabled(p)) {
+            g.drawCenteredString(mc.font, "ODM OFF", cx, cy + 10, 0xAAAAAA);
+            return;
+        }
+        if (!ODM.isUsable(p)) {
+            return;
+        }
+        // hook range indicators left/right of the crosshair
+        g.drawString(mc.font, "<", cx - 14, cy - 4, ODM.leftInRange ? 0x55FF55 : 0xFF5555, true);
+        g.drawString(mc.font, ">", cx + 10, cy - 4, ODM.rightInRange ? 0x55FF55 : 0xFF5555, true);
+        if (OdmConfig.speedometer()) {
+            double speed = ODM.displaySpeed(p);
+            int color = speed > 120 ? 0xFF6060 : 0xFFFFFF;
+            g.drawCenteredString(mc.font, String.format("%.0f", speed), cx, cy + 10, color);
+        }
+    }
+}
