@@ -54,7 +54,7 @@ public final class OdmPhysics {
     /** Without gas the speed slowly fades by this much per second (AoTTG units/s^2). */
     static final double COAST_DECAY = 10.0;
     /** How fast reel in/out blends in (1/s), so reeling turns your momentum instead of snapping it. */
-    static final double REEL_RESPONSE = 5.0;
+    static final double REEL_RESPONSE = 14.0;
 
     static final int SUBSTEPS = 5;
     static final double TICK = 0.05;
@@ -120,7 +120,8 @@ public final class OdmPhysics {
     public void onScroll(double delta) {
         if (delta < 0) {
             // AoTTG: each wheel-down notch reels in for one fixed step (0.02 s)
-            reelInSteps = Math.min(reelInSteps + (int) Math.round(FIXED_STEP / DT), SUBSTEPS * 4);
+            // each wheel notch reels in for ~0.15 s so the smoothed reel has time to act
+            reelInSteps = Math.min(reelInSteps + (int) Math.round(0.15 / DT), SUBSTEPS * 8);
         } else if (delta > 0) {
             // AoTTG: wheel up = reel out, smoothed for 0.2 s
             reelOutTime = 0.2;

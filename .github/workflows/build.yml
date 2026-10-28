@@ -31,6 +31,7 @@ jobs:
           path: build/libs/*.jar
 
       - name: Generate terrain preview (ODM Crags world type)
+        if: contains(github.event.head_commit.message, '[terrain]')
         run: |
           mkdir -p run
           echo "eula=true" > run/eula.txt
