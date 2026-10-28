@@ -4,6 +4,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.levelgen.feature.Feature;
+import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 import net.minecraftforge.event.entity.living.LivingFallEvent;
@@ -27,9 +29,14 @@ public class OdmMod {
     public static final RegistryObject<Item> HOOK_TIP = ITEMS.register("hook_tip",
             () -> new Item(new Item.Properties()));
 
+    public static final DeferredRegister<Feature<?>> FEATURES = DeferredRegister.create(ForgeRegistries.FEATURES, MODID);
+    public static final RegistryObject<Feature<NoneFeatureConfiguration>> REMOVE_DEBRIS = FEATURES.register("remove_debris",
+            DebrisCleanupFeature::new);
+
     public OdmMod() {
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();
         ITEMS.register(modBus);
+        FEATURES.register(modBus);
         modBus.addListener(this::addCreative);
         ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, OdmConfig.SPEC);
         MinecraftForge.EVENT_BUS.addListener(this::onFall);

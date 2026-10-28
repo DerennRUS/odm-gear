@@ -109,7 +109,7 @@ public final class TerrainDump {
                 }
                 ImageIO.write(sec, "png", new File(dir, "section_" + k + ".png"));
             }
-            debrisStats(gen, level, rs, dir);
+            debrisStats(server, level, dir);
             BlockPos spawn = level.getSharedSpawnPos();
             OdmModLog.info("Terrain dump written, spawn at " + spawn);
         } catch (Exception e) {
@@ -120,17 +120,30 @@ public final class TerrainDump {
 
 
     /** Counts disconnected solid pieces in a 160x160 column area by size (6-neighbour flood fill). */
-    private static void debrisStats(ChunkGenerator gen, ServerLevel level, RandomState rs, File dir) throws Exception {
+    private static void debrisStats(MinecraftServer server, ServerLevel level, File dir) throws Exception {
         int n = 160;
         int minY = level.getMinBuildHeight();
         int hgt = level.getMaxBuildHeight() - minY;
         boolean[] solid = new boolean[n * n * hgt];
-        for (int x = 0; x < n; x++) {
-            for (int z = 0; z < n; z++) {
-                NoiseColumn col = gen.getBaseColumn(x + 1000, z + 1000, level, rs);
-                for (int y = 0; y < hgt; y++) {
-                    BlockState st = col.getBlock(y + minY);
-                    solid[(x * n + z) * hgt + y] = !st.isAir() && st.getFluidState().isEmpty();
+        BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
+        int ox = 1008;
+        int oz = 1008;
+        for (int ccx = 0; ccx < n / 16; ccx++) {
+            for (int ccz = 0; ccz < n / 16; ccz++) {
+                final int chx = (ox >> 4) + ccx;
+                final int chz = (oz >> 4) + ccz;
+                net.minecraft.world.level.chunk.ChunkAccess chunk = server.submit(() -> level.getChunk(chx, chz)).join();
+                for (int lx = 0; lx < 16; lx++) {
+                    for (int lz = 0; lz < 16; lz++) {
+                        int x = ccx * 16 + lx;
+                        int z = ccz * 16 + lz;
+                        for (int y = 0; y < hgt; y++) {
+                            m.set(ox + x, y + minY, oz + z);
+                            BlockState st = chunk.getBlockState(m);
+                            solid[(x * n + z) * hgt + y] = !st.isAir() && st.getFluidState().isEmpty()
+                                    && !st.is(net.minecraft.tags.BlockTags.LEAVES) && !st.is(net.minecraft.tags.BlockTags.LOGS);
+                        }
+                    }
                 }
             }
         }

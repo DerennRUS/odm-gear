@@ -19,7 +19,7 @@ PARAMS = {
     # everything fades to air above this band (no flat cut at the world ceiling)
     "ceiling_from_y": 360, "ceiling_to_y": 460, "ceiling_drop": -6.0,
     # classic 1.12-style 3D terrain noise: jagged cliffs and overhangs
-    "base_amp": 4.0, "base_xz_scale": 0.25, "base_y_scale": 0.25, "base_xz_factor": 60.0, "base_y_factor": 45.0,
+    "base_amp": 3.0, "base_xz_scale": 0.25, "base_y_scale": 0.25, "base_xz_factor": 80.0, "base_y_factor": 60.0,
     # big blobby 3D structures (arches, floating ledges, overhanging walls)
     "blob_amp": 1.2, "blob_xz_scale": 2.0, "blob_y_scale": 3.0,
     # needle-like spires (2D high-frequency noise above a threshold)

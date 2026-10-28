@@ -87,7 +87,7 @@
                   "type": "minecraft:add",
                   "argument1": {
                     "type": "minecraft:mul",
-                    "argument1": 4.0,
+                    "argument1": 3.0,
                     "argument2": "odmgear:crags/base_3d"
                   },
                   "argument2": {
