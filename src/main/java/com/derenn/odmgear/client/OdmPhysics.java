@@ -322,7 +322,20 @@ public final class OdmPhysics {
                         d = h.lengthSqr() > 1.0E-4 ? h.normalize() : null;
                     }
                     if (d != null) {
-                        acc = acc.add(d.scale(gasAccel(vel.length() / s) * s));
+                        double speedU = vel.length() / s;
+                        double base = gasAccel(speedU);
+                        // left / right / back thrust is stronger: + half of the current speed per second
+                        double side = base + 0.5 * speedU;
+                        if (inputDir != null) {
+                            Vec3 fwd = forwardVector(p.getYRot());
+                            Vec3 rgt = rightVector(p.getYRot());
+                            double fc = d.dot(fwd);
+                            double rc = d.dot(rgt);
+                            acc = acc.add(fwd.scale(fc * (fc > 0 ? base : side) * s));
+                            acc = acc.add(rgt.scale(rc * side * s));
+                        } else {
+                            acc = acc.add(d.scale(base * s));
+                        }
                     }
                     gasInUse = true;
                 }
