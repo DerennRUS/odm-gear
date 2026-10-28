@@ -11,15 +11,15 @@ SEA_LEVEL = 40
 PARAMS = {
     # ---- Ultra-Amplified-style layered terrain (all values in blocks) ----
     # ground: jagged amplified land at the bottom
-    "ground_base": 95, "ground_amp": 45, "ground_rough": 28,
+    "ground_base": 70, "ground_amp": 35, "ground_rough": 20, "ground_spike": 45,
     # floating layers: centre height, centre wobble, thickness, how much of the layer is holes
     "layers": [
-        {"y": 185, "wobble": 30, "thick": 16, "thick_amp": 22, "rough": 14, "seed": 1000},
-        {"y": 280, "wobble": 30, "thick": 14, "thick_amp": 22, "rough": 14, "seed": 2000},
-        {"y": 370, "wobble": 25, "thick": 12, "thick_amp": 22, "rough": 12, "seed": 3000},
+        {"y": 200, "wobble": 25, "thick": 22, "thick_amp": 18, "rough": 10, "seed": 1000},
+        {"y": 295, "wobble": 25, "thick": 20, "thick_amp": 18, "rough": 10, "seed": 2000},
+        {"y": 385, "wobble": 20, "thick": 18, "thick_amp": 18, "rough": 9, "seed": 3000},
     ],
     # columns connecting the layers
-    "pillar_threshold": 0.72, "pillar_sharp": 600.0, "pillar_top": 395,
+    "pillar_threshold": 0.7, "pillar_sharp": 300.0, "pillar_xz": 500.0, "pillar_top": 405,
     # 3D noise used for ragged edges/overhangs
     "base_xz_scale": 0.25, "base_y_scale": 0.25, "base_xz_factor": 80.0, "base_y_factor": 60.0,
     # snow line
@@ -70,7 +70,7 @@ def main():
 
     # ground: height = base + amp * large noise + spikes ; density = height - y + roughness
     ground_h = cache2d(add(float(p["ground_base"]), add(mul(float(p["ground_amp"]), noise("minecraft:erosion", 1.5, 0.0)),
-                                                 mul(60.0, {"type": "minecraft:max", "argument1": 0.0,
+                                                 mul(float(p["ground_spike"]), {"type": "minecraft:max", "argument1": 0.0,
                                                             "argument2": add(noise("minecraft:ridge", 2.0, 0.0), -0.35)}))))
     w("odmgear/worldgen/density_function/crags/ground_height.json", ground_h)
     ground = add(add("odmgear:crags/ground_height", mul(-1.0, y_ref)), mul(float(p["ground_rough"]), rough))
@@ -86,7 +86,7 @@ def main():
         parts.append(layer)
 
     # pillars: where a high-frequency 2D noise peaks, a column rises from the ground up to pillar_top
-    pillar2d = cache2d(mul(p["pillar_sharp"], add(noise("minecraft:jagged", 1500.0, 0.0), -p["pillar_threshold"])))
+    pillar2d = cache2d(mul(p["pillar_sharp"], add(noise("minecraft:jagged", p["pillar_xz"], 0.0), -p["pillar_threshold"])))
     w("odmgear/worldgen/density_function/crags/pillar.json", pillar2d)
     pillar = {"type": "minecraft:min", "argument1": add("odmgear:crags/pillar", mul(6.0, rough)),
               "argument2": add(float(p["pillar_top"]), mul(-1.0, y_ref))}
