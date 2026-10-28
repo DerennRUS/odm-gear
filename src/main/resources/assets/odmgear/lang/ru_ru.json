@@ -11,5 +11,6 @@
   "key.odmgear.toggle": "Вкл/выкл УПМ",
   "msg.odmgear.on": "УПМ: включено",
   "msg.odmgear.off": "УПМ: выключено",
-  "item.odmgear.hook_tip": "Крюк"
+  "item.odmgear.hook_tip": "Крюк",
+  "generator.odmgear.crags": "Рваные скалы (УПМ)"
 }

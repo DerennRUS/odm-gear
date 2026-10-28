@@ -18,6 +18,18 @@ minecraft {
     copyIdeResources = true
 
     runs {
+        server {
+            workingDirectory project.file('run')
+            property 'forge.logging.console.level', 'info'
+            property 'odmgear.dumpTerrain', 'true'
+            args '--nogui'
+            mods {
+                odmgear {
+                    source sourceSets.main
+                }
+            }
+        }
+
         client {
             workingDirectory project.file('run')
             property 'forge.logging.console.level', 'info'

@@ -11,5 +11,6 @@
   "key.odmgear.toggle": "Toggle ODM gear",
   "msg.odmgear.on": "ODM gear: ON",
   "msg.odmgear.off": "ODM gear: OFF",
-  "item.odmgear.hook_tip": "Hook"
+  "item.odmgear.hook_tip": "Hook",
+  "generator.odmgear.crags": "ODM Crags"
 }

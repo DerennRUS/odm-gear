@@ -30,10 +30,22 @@ jobs:
           name: odmgear
           path: build/libs/*.jar
 
+      - name: Generate terrain preview (ODM Crags world type)
+        run: |
+          mkdir -p run
+          echo "eula=true" > run/eula.txt
+          printf 'level-type=odmgear\\:crags\nlevel-seed=odmgear\nspawn-protection=0\nonline-mode=false\nmax-world-size=29999984\n' > run/server.properties
+          cat run/server.properties
+          timeout 1500 gradle runServer --no-daemon || true
+          ls -la run/terrain_dump || true
+          grep -E "ERROR|Exception|odmgear" run/logs/latest.log | head -60 || true
+
       - name: Publish jar to the builds branch
         if: github.ref == 'refs/heads/main'
         run: |
           mkdir -p /tmp/out && cp build/libs/*.jar /tmp/out/
+          cp -r run/terrain_dump /tmp/out/ 2>/dev/null || true
+          cp run/logs/latest.log /tmp/out/server.log 2>/dev/null || true
           cd /tmp/out
           git init -q -b builds
           git config user.name "github-actions"
