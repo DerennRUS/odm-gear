@@ -88,7 +88,8 @@ public class DebrisCleanupFeature extends Feature<NoneFeatureConfiguration> {
             for (int z = 16; z < 32; z++) {
                 for (int y = 8; y < hgt; y++) {
                     int start = idx(x, y, z, size, hgt);
-                    if (!solid.get(start) || big.get(start)) {
+                    // every floating piece has an underside: only start from solid blocks with air below
+                    if (!solid.get(start) || big.get(start) || solid.get(start - 1)) {
                         continue;
                     }
                     // flood fill until the piece proves to be big
