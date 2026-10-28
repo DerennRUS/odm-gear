@@ -92,7 +92,6 @@ public class DebrisCleanupFeature extends Feature<NoneFeatureConfiguration> {
                         continue;
                     }
                     // flood fill until the piece proves to be big
-                    visited.clear();
                     int head = 0;
                     int tail = 0;
                     queue[tail++] = start;
@@ -123,6 +122,9 @@ public class DebrisCleanupFeature extends Feature<NoneFeatureConfiguration> {
                         if (isBig) {
                             break;
                         }
+                    }
+                    for (int k = 0; k < tail; k++) {
+                        visited.clear(queue[k]);
                     }
                     if (isBig) {
                         for (int k = 0; k < tail; k++) {
