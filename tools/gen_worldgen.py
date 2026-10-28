@@ -9,23 +9,21 @@ HEIGHT = 576            # world from -64 to 511
 SEA_LEVEL = 40
 
 PARAMS = {
-    # vertical gradient: solid below, air above; zero crossing ~ (ZERO_Y)
-    "grad_top_y": 448, "grad_top": -2.5,
-    "grad_bottom": 2.5,
-    # large regional height shifts (2D)
-    "region_amp": 1.0, "region_scale": 0.6,
-    # tall walls / towers: 3D noise stretched vertically
-    "tower_amp": 2.2, "tower_xz_scale": 2.5, "tower_y_scale": 0.35,
-    # everything fades to air above this band (no flat cut at the world ceiling)
-    "ceiling_from_y": 360, "ceiling_to_y": 460, "ceiling_drop": -6.0,
-    # classic 1.12-style 3D terrain noise: jagged cliffs and overhangs
-    "base_amp": 3.0, "base_xz_scale": 0.25, "base_y_scale": 0.25, "base_xz_factor": 80.0, "base_y_factor": 60.0,
-    # big blobby 3D structures (arches, floating ledges, overhanging walls)
-    "blob_amp": 1.2, "blob_xz_scale": 2.0, "blob_y_scale": 3.0,
-    # needle-like spires (2D high-frequency noise above a threshold)
-    "spire_amp": 4.0, "spire_threshold": 0.5, "spire_xz_scale": 1500.0,
+    # ---- Ultra-Amplified-style layered terrain (all values in blocks) ----
+    # ground: jagged amplified land at the bottom
+    "ground_base": 95, "ground_amp": 45, "ground_rough": 28,
+    # floating layers: centre height, centre wobble, thickness, how much of the layer is holes
+    "layers": [
+        {"y": 185, "wobble": 30, "thick": 16, "thick_amp": 22, "rough": 14, "seed": 1000},
+        {"y": 280, "wobble": 30, "thick": 14, "thick_amp": 22, "rough": 14, "seed": 2000},
+        {"y": 370, "wobble": 25, "thick": 12, "thick_amp": 22, "rough": 12, "seed": 3000},
+    ],
+    # columns connecting the layers
+    "pillar_threshold": 0.72, "pillar_sharp": 600.0, "pillar_top": 395,
+    # 3D noise used for ragged edges/overhangs
+    "base_xz_scale": 0.25, "base_y_scale": 0.25, "base_xz_factor": 80.0, "base_y_factor": 60.0,
     # snow line
-    "snow_y": 300,
+    "snow_y": 400,
 }
 
 
@@ -51,33 +49,57 @@ def noise(key, xz, y):
 
 def main():
     p = PARAMS
-    gradient = {"type": "minecraft:y_clamped_gradient", "from_y": MIN_Y, "to_y": p["grad_top_y"],
-                "from_value": p["grad_bottom"], "to_value": p["grad_top"]}
-    region = {"type": "minecraft:flat_cache", "argument": {"type": "minecraft:cache_2d", "argument":
-              mul(p["region_amp"], noise("minecraft:erosion", p["region_scale"], 0.0))}}
+    import shutil
+    shutil.rmtree(os.path.join(ROOT, "odmgear/worldgen/density_function/crags"), ignore_errors=True)
+
+    def cache2d(f):
+        return {"type": "minecraft:flat_cache", "argument": {"type": "minecraft:cache_2d", "argument": f}}
+
+    def snoise(key, xz, y, shift):
+        return {"type": "minecraft:shifted_noise", "noise": key, "xz_scale": xz, "y_scale": y,
+                "shift_x": float(shift), "shift_y": 0.0, "shift_z": float(shift * 0.7)}
+
+    Y = {"type": "minecraft:y_clamped_gradient", "from_y": MIN_Y, "to_y": 512, "from_value": float(MIN_Y), "to_value": 512.0}
     base3d = {"type": "minecraft:old_blended_noise", "xz_scale": p["base_xz_scale"], "y_scale": p["base_y_scale"],
               "xz_factor": p["base_xz_factor"], "y_factor": p["base_y_factor"], "smear_scale_multiplier": 8.0}
-    blob = noise("minecraft:cave_cheese", p["blob_xz_scale"], p["blob_y_scale"])
-    tower = noise("minecraft:cave_cheese", p["tower_xz_scale"], p["tower_y_scale"])
-    spire = {"type": "minecraft:flat_cache", "argument": {"type": "minecraft:cache_2d", "argument":
-             mul(p["spire_amp"], {"type": "minecraft:max", "argument1": 0.0,
-                                  "argument2": add(noise("minecraft:jagged", p["spire_xz_scale"], 0.0), -p["spire_threshold"])})}}
-
-    w("odmgear/worldgen/density_function/crags/gradient.json", gradient)
-    w("odmgear/worldgen/density_function/crags/region.json", region)
-    w("odmgear/worldgen/density_function/crags/spire.json", spire)
+    w("odmgear/worldgen/density_function/crags/y.json", Y)
     w("odmgear/worldgen/density_function/crags/base_3d.json", base3d)
+    y_ref = "odmgear:crags/y"
+    # old_blended_noise is roughly +-0.13, so x7.5 gives about +-1 before the per-part amplitude
+    rough = mul(7.5, "odmgear:crags/base_3d")
 
-    smooth = add("odmgear:crags/gradient", add("odmgear:crags/region", "odmgear:crags/spire"))
-    terrain = add(smooth, add(mul(p["base_amp"], "odmgear:crags/base_3d"),
-                              add(mul(p["blob_amp"], blob), mul(p["tower_amp"], tower))))
-    ceiling = {"type": "minecraft:y_clamped_gradient", "from_y": p["ceiling_from_y"], "to_y": p["ceiling_to_y"],
-               "from_value": 0.0, "to_value": p["ceiling_drop"]}
-    terrain = add(terrain, ceiling)
+    # ground: height = base + amp * large noise + spikes ; density = height - y + roughness
+    ground_h = cache2d(add(float(p["ground_base"]), add(mul(float(p["ground_amp"]), noise("minecraft:erosion", 1.5, 0.0)),
+                                                 mul(60.0, {"type": "minecraft:max", "argument1": 0.0,
+                                                            "argument2": add(noise("minecraft:ridge", 2.0, 0.0), -0.35)}))))
+    w("odmgear/worldgen/density_function/crags/ground_height.json", ground_h)
+    ground = add(add("odmgear:crags/ground_height", mul(-1.0, y_ref)), mul(float(p["ground_rough"]), rough))
+
+    parts = [ground]
+    for i, L in enumerate(p["layers"]):
+        centre = cache2d(add(float(L["y"]), mul(float(L["wobble"]), snoise("minecraft:ridge", 1.2, 0.0, L["seed"]))))
+        thick = cache2d(add(float(L["thick"]), mul(float(L["thick_amp"]), snoise("minecraft:surface", 1.0, 0.0, L["seed"] + 500))))
+        w(f"odmgear/worldgen/density_function/crags/layer{i}_centre.json", centre)
+        w(f"odmgear/worldgen/density_function/crags/layer{i}_thickness.json", thick)
+        dist = {"type": "minecraft:abs", "argument": add(y_ref, mul(-1.0, f"odmgear:crags/layer{i}_centre"))}
+        layer = add(add(f"odmgear:crags/layer{i}_thickness", mul(-1.0, dist)), mul(float(L["rough"]), rough))
+        parts.append(layer)
+
+    # pillars: where a high-frequency 2D noise peaks, a column rises from the ground up to pillar_top
+    pillar2d = cache2d(mul(p["pillar_sharp"], add(noise("minecraft:jagged", 1500.0, 0.0), -p["pillar_threshold"])))
+    w("odmgear/worldgen/density_function/crags/pillar.json", pillar2d)
+    pillar = {"type": "minecraft:min", "argument1": add("odmgear:crags/pillar", mul(6.0, rough)),
+              "argument2": add(float(p["pillar_top"]), mul(-1.0, y_ref))}
+    parts.append(pillar)
+
+    terrain = parts[0]
+    for part in parts[1:]:
+        terrain = {"type": "minecraft:max", "argument1": terrain, "argument2": part}
     # always solid near the bottom of the world
     floor = {"type": "minecraft:y_clamped_gradient", "from_y": MIN_Y, "to_y": MIN_Y + 24, "from_value": 10.0, "to_value": -10.0}
     terrain = {"type": "minecraft:max", "argument1": terrain, "argument2": floor}
-    final_density = {"type": "minecraft:squeeze", "argument": mul(0.64, {"type": "minecraft:interpolated", "argument": terrain})}
+    final_density = {"type": "minecraft:interpolated", "argument": mul(0.1, terrain)}
+    smooth = mul(0.1, add("odmgear:crags/ground_height", mul(-1.0, y_ref)))
 
     shift_x = "minecraft:shift_x"
     shift_z = "minecraft:shift_z"
