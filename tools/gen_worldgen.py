@@ -15,9 +15,11 @@ PARAMS = {
     # large regional height shifts (2D)
     "region_amp": 1.0, "region_scale": 0.6,
     # tall walls / towers: 3D noise stretched vertically
-    "tower_amp": 2.2, "tower_xz_scale": 2.5, "tower_y_scale": 0.4,
+    "tower_amp": 2.2, "tower_xz_scale": 2.5, "tower_y_scale": 0.35,
+    # everything fades to air above this band (no flat cut at the world ceiling)
+    "ceiling_from_y": 360, "ceiling_to_y": 460, "ceiling_drop": -6.0,
     # classic 1.12-style 3D terrain noise: jagged cliffs and overhangs
-    "base_amp": 6.0, "base_xz_scale": 0.25, "base_y_scale": 0.25, "base_xz_factor": 40.0, "base_y_factor": 30.0,
+    "base_amp": 4.0, "base_xz_scale": 0.25, "base_y_scale": 0.25, "base_xz_factor": 60.0, "base_y_factor": 45.0,
     # big blobby 3D structures (arches, floating ledges, overhanging walls)
     "blob_amp": 1.2, "blob_xz_scale": 2.0, "blob_y_scale": 3.0,
     # needle-like spires (2D high-frequency noise above a threshold)
@@ -56,7 +58,7 @@ def main():
     base3d = {"type": "minecraft:old_blended_noise", "xz_scale": p["base_xz_scale"], "y_scale": p["base_y_scale"],
               "xz_factor": p["base_xz_factor"], "y_factor": p["base_y_factor"], "smear_scale_multiplier": 8.0}
     blob = noise("minecraft:cave_cheese", p["blob_xz_scale"], p["blob_y_scale"])
-    tower = noise("minecraft:cave_layer", p["tower_xz_scale"], p["tower_y_scale"])
+    tower = noise("minecraft:cave_cheese", p["tower_xz_scale"], p["tower_y_scale"])
     spire = {"type": "minecraft:flat_cache", "argument": {"type": "minecraft:cache_2d", "argument":
              mul(p["spire_amp"], {"type": "minecraft:max", "argument1": 0.0,
                                   "argument2": add(noise("minecraft:jagged", p["spire_xz_scale"], 0.0), -p["spire_threshold"])})}}
@@ -69,6 +71,9 @@ def main():
     smooth = add("odmgear:crags/gradient", add("odmgear:crags/region", "odmgear:crags/spire"))
     terrain = add(smooth, add(mul(p["base_amp"], "odmgear:crags/base_3d"),
                               add(mul(p["blob_amp"], blob), mul(p["tower_amp"], tower))))
+    ceiling = {"type": "minecraft:y_clamped_gradient", "from_y": p["ceiling_from_y"], "to_y": p["ceiling_to_y"],
+               "from_value": 0.0, "to_value": p["ceiling_drop"]}
+    terrain = add(terrain, ceiling)
     # always solid near the bottom of the world
     floor = {"type": "minecraft:y_clamped_gradient", "from_y": MIN_Y, "to_y": MIN_Y + 24, "from_value": 10.0, "to_value": -10.0}
     terrain = {"type": "minecraft:max", "argument1": terrain, "argument2": floor}

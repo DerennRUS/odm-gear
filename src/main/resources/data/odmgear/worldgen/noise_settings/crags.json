@@ -74,43 +74,53 @@
               "type": "minecraft:add",
               "argument1": {
                 "type": "minecraft:add",
-                "argument1": "odmgear:crags/gradient",
-                "argument2": {
-                  "type": "minecraft:add",
-                  "argument1": "odmgear:crags/region",
-                  "argument2": "odmgear:crags/spire"
-                }
-              },
-              "argument2": {
-                "type": "minecraft:add",
                 "argument1": {
-                  "type": "minecraft:mul",
-                  "argument1": 6.0,
-                  "argument2": "odmgear:crags/base_3d"
+                  "type": "minecraft:add",
+                  "argument1": "odmgear:crags/gradient",
+                  "argument2": {
+                    "type": "minecraft:add",
+                    "argument1": "odmgear:crags/region",
+                    "argument2": "odmgear:crags/spire"
+                  }
                 },
                 "argument2": {
                   "type": "minecraft:add",
                   "argument1": {
                     "type": "minecraft:mul",
-                    "argument1": 1.2,
-                    "argument2": {
-                      "type": "minecraft:noise",
-                      "noise": "minecraft:cave_cheese",
-                      "xz_scale": 2.0,
-                      "y_scale": 3.0
-                    }
+                    "argument1": 4.0,
+                    "argument2": "odmgear:crags/base_3d"
                   },
                   "argument2": {
-                    "type": "minecraft:mul",
-                    "argument1": 2.2,
+                    "type": "minecraft:add",
+                    "argument1": {
+                      "type": "minecraft:mul",
+                      "argument1": 1.2,
+                      "argument2": {
+                        "type": "minecraft:noise",
+                        "noise": "minecraft:cave_cheese",
+                        "xz_scale": 2.0,
+                        "y_scale": 3.0
+                      }
+                    },
                     "argument2": {
-                      "type": "minecraft:noise",
-                      "noise": "minecraft:cave_layer",
-                      "xz_scale": 2.5,
-                      "y_scale": 0.4
+                      "type": "minecraft:mul",
+                      "argument1": 2.2,
+                      "argument2": {
+                        "type": "minecraft:noise",
+                        "noise": "minecraft:cave_cheese",
+                        "xz_scale": 2.5,
+                        "y_scale": 0.35
+                      }
                     }
                   }
                 }
+              },
+              "argument2": {
+                "type": "minecraft:y_clamped_gradient",
+                "from_y": 360,
+                "to_y": 460,
+                "from_value": 0.0,
+                "to_value": -6.0
               }
             },
             "argument2": {
