@@ -20,8 +20,8 @@ public final class Hook {
 
     /** Hook projectile speed: AoTTG 150 units/s, made 1.4x faster. */
     public static final double FLIGHT_SPEED = 150.0 * 1.4;
-    /** Flight time limit chosen so the range stays AoTTG's 120 units (150 * 0.8). */
-    public static final double MAX_FLIGHT_TIME = 0.8 / 1.4;
+    /** Flight time limit: range 180 units (~80 blocks at worldScale 0.447). */
+    public static final double MAX_FLIGHT_TIME = 0.8 / 1.4 * 1.5;
     /** Missed hook retracts for 0.5 s before it can be fired again. */
     public static final double RETRACT_TIME = 0.5;
     /** After attaching, a hook stays at least this long even if the key was released. */
