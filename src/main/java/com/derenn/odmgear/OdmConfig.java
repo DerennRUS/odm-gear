@@ -12,7 +12,7 @@ public final class OdmConfig {
         WORLD_SCALE = b.comment(
                         "How many Minecraft blocks one AoTTG2 unit equals.",
                         "1.0 = original physics 1:1. Lower = everything (speeds, gravity, rope pull, hook range) shrinks proportionally.")
-                .defineInRange("worldScale", 1.0, 0.1, 5.0);
+                .defineInRange("worldScale", 0.67, 0.1, 5.0);
         SPEEDOMETER = b.comment("Show AoTTG-style speed under the crosshair")
                 .define("speedometer", true);
         SPEC = b.build();
@@ -25,7 +25,7 @@ public final class OdmConfig {
         try {
             return WORLD_SCALE.get();
         } catch (Exception e) {
-            return 1.0;
+            return 0.67;
         }
     }
 

@@ -23,6 +23,9 @@ public class OdmMod {
     public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, MODID);
     public static final RegistryObject<Item> ODM_GEAR = ITEMS.register("odm_gear",
             () -> new Item(new Item.Properties().stacksTo(1)));
+    /** Only used to render the flying hook head. */
+    public static final RegistryObject<Item> HOOK_TIP = ITEMS.register("hook_tip",
+            () -> new Item(new Item.Properties()));
 
     public OdmMod() {
         IEventBus modBus = FMLJavaModLoadingContext.get().getModEventBus();

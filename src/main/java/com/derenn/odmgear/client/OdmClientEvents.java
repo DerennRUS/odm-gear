@@ -2,15 +2,11 @@ package com.derenn.odmgear.client;
 
 import com.derenn.odmgear.OdmConfig;
 import com.derenn.odmgear.OdmMod;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.Input;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.InputEvent;
@@ -21,8 +17,6 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.fml.common.Mod;
-import org.joml.Matrix3f;
-import org.joml.Matrix4f;
 import org.lwjgl.glfw.GLFW;
 
 @Mod.EventBusSubscriber(modid = OdmMod.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
@@ -110,7 +104,7 @@ public final class OdmClientEvents {
         if (OdmKeys.HOOK_LEFT.matches(key, scan)) ODM.pressedLeft = true;
         if (OdmKeys.HOOK_RIGHT.matches(key, scan)) ODM.pressedRight = true;
         if (OdmKeys.HOOK_BOTH.matches(key, scan)) ODM.pressedBoth = true;
-        if (OdmKeys.GAS.matches(key, scan)) ODM.pressedGas = true;
+        if (OdmKeys.GAS.matches(key, scan)) { ODM.pressedGas = true; ODM.gasEdge = true; }
         if (OdmKeys.REEL_IN.matches(key, scan)) ODM.onScroll(-1);
         if (OdmKeys.REEL_OUT.matches(key, scan)) ODM.onScroll(1);
 
@@ -156,7 +150,7 @@ public final class OdmClientEvents {
         if (OdmKeys.HOOK_LEFT.matchesMouse(b)) { ODM.pressedLeft = true; used = true; }
         if (OdmKeys.HOOK_RIGHT.matchesMouse(b)) { ODM.pressedRight = true; used = true; }
         if (OdmKeys.HOOK_BOTH.matchesMouse(b)) { ODM.pressedBoth = true; used = true; }
-        if (OdmKeys.GAS.matchesMouse(b)) { ODM.pressedGas = true; used = true; }
+        if (OdmKeys.GAS.matchesMouse(b)) { ODM.pressedGas = true; ODM.gasEdge = true; used = true; }
         if (OdmKeys.REEL_IN.matchesMouse(b)) { ODM.onScroll(-1); used = true; }
         if (OdmKeys.REEL_OUT.matchesMouse(b)) { ODM.onScroll(1); used = true; }
         if (used) {
@@ -180,45 +174,7 @@ public final class OdmClientEvents {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) {
             return;
         }
-        Minecraft mc = Minecraft.getInstance();
-        LocalPlayer p = mc.player;
-        if (p == null || (!ODM.leftHook.isVisible() && !ODM.rightHook.isVisible())) {
-            return;
-        }
-        float pt = event.getPartialTick();
-        Vec3 cam = event.getCamera().getPosition();
-        PoseStack ps = event.getPoseStack();
-        MultiBufferSource.BufferSource buffers = mc.renderBuffers().bufferSource();
-        VertexConsumer vc = buffers.getBuffer(RenderType.lines());
-        ps.pushPose();
-        ps.translate(-cam.x, -cam.y, -cam.z);
-        Matrix4f pose = ps.last().pose();
-        Matrix3f normal = ps.last().normal();
-        Vec3 feet = p.getPosition(pt);
-        float yaw = p.getViewYRot(pt);
-        for (Hook h : new Hook[]{ODM.leftHook, ODM.rightHook}) {
-            if (!h.isVisible()) {
-                continue;
-            }
-            Vec3 a = OdmPhysics.anchor(feet, p.getBbHeight(), yaw, h.left);
-            Vec3 b = h.state == Hook.State.FLYING ? h.prevPos.lerp(h.pos, pt) : h.pos;
-            rope(vc, pose, normal, a, b);
-        }
-        ps.popPose();
-        buffers.endBatch(RenderType.lines());
-    }
-
-    private static void rope(VertexConsumer vc, Matrix4f pose, Matrix3f normal, Vec3 a, Vec3 b) {
-        Vec3 d = b.subtract(a);
-        double len = d.length();
-        if (len < 1.0E-4) {
-            return;
-        }
-        Vec3 n = d.scale(1.0 / len);
-        vc.vertex(pose, (float) a.x, (float) a.y, (float) a.z).color(25, 25, 25, 255)
-                .normal(normal, (float) n.x, (float) n.y, (float) n.z).endVertex();
-        vc.vertex(pose, (float) b.x, (float) b.y, (float) b.z).color(25, 25, 25, 255)
-                .normal(normal, (float) n.x, (float) n.y, (float) n.z).endVertex();
+        RopeRenderer.render(event.getPoseStack(), event.getCamera().getPosition(), event.getPartialTick());
     }
 
     @SubscribeEvent

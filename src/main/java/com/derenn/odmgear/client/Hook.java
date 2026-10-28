@@ -8,6 +8,9 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * One grappling hook. Ported from AoTTG2 Hook.cs / HookUseable.cs.
  * All speeds are in blocks per second (AoTTG units * worldScale).
@@ -39,6 +42,13 @@ public final class Hook {
     /** Whether the hook key is currently held (HookUseable.IsActive). */
     public boolean keyHeld;
 
+    /** World-space points the hook passed through (one per 0.02 s), used to draw the rope trail. */
+    public final List<Vec3> nodes = new ArrayList<>();
+    private double nodeTimer;
+    /** Incremented on each attach so the renderer knows to start a new rope simulation. */
+    public int attachId;
+    public Vec3 flightDir = new Vec3(0, 1, 0);
+
     public Hook(boolean left) {
         this.left = left;
     }
@@ -67,6 +77,10 @@ public final class Hook {
         relVel = along > 0 ? dir.scale(along) : Vec3.ZERO;
         pos = anchor;
         prevPos = anchor;
+        flightDir = dir;
+        nodes.clear();
+        nodes.add(anchor);
+        nodeTimer = 0;
         life = 0;
         state = State.FLYING;
         launch = false;
@@ -83,9 +97,16 @@ public final class Hook {
                 state = State.HOOKED;
                 launch = true;
                 launchTime = 0;
+                attachId++;
+                nodes.add(pos);
                 return true;
             }
             pos = next;
+            nodeTimer += dt;
+            if (nodeTimer >= 0.02 - 1.0E-9) {
+                nodeTimer = 0;
+                nodes.add(pos);
+            }
             life += dt;
             if (life > MAX_FLIGHT_TIME) {
                 state = State.RETRACT;

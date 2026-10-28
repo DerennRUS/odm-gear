@@ -44,6 +44,8 @@ public final class OdmPhysics {
     static final double DASH_SPEED = 40.0;
     static final double DASH_TIME = 0.5;
     static final double DASH_DECAY = 1.7;
+    /** AoTTG jump: +8 vertical velocity. */
+    static final double JUMP_SPEED = 8.0;
     /** Run speed stat 110 / 10. Landing faster than RunSpeed*sqrt(1.5) slides; slide ends below RunSpeed*1.2. */
     static final double RUN_SPEED = 11.0;
     static final double FIXED_STEP = 0.02;
@@ -73,6 +75,8 @@ public final class OdmPhysics {
 
     // Input collected by OdmClientEvents between ticks
     boolean pressedLeft, pressedRight, pressedBoth, pressedGas;
+    /** Gas key went down since last tick: on the ground this is AoTTG's jump. */
+    boolean gasEdge;
     Vec3 pendingDash;
 
     // HUD info
@@ -136,10 +140,18 @@ public final class OdmPhysics {
         boolean reelInKey = !screen && OdmKeys.held(OdmKeys.REEL_IN);
         boolean reelOutKey = !screen && OdmKeys.held(OdmKeys.REEL_OUT);
         Vec3 dashDir = screen ? null : pendingDash;
+        boolean jumpPressed = !screen && gasEdge;
         clearPressed();
         Vec3 inputDir = screen ? null : inputDirection(mc, p);
 
         Vec3 pos = p.position();
+        // velocity the player actually had over the last tick (works for vanilla movement too)
+        Vec3 measuredVel = pos.subtract(lastPos).scale(1.0 / TICK);
+        if (measuredVel.length() > 200) {
+            measuredVel = p.getDeltaMovement().scale(1.0 / TICK);
+        }
+        leftHook.prevPos = leftHook.pos;
+        rightHook.prevPos = rightHook.pos;
 
         // ---------- correct our velocity for collisions that happened during vanilla move ----------
         if (physicsActive) {
@@ -203,13 +215,23 @@ public final class OdmPhysics {
             if (!physicsActive && anyPulling() && liftsOff(center, s)) {
                 physicsActive = true;
                 sliding = false;
-                vel = p.getDeltaMovement().scale(1.0 / TICK);
-                vel = new Vec3(vel.x, Math.max(vel.y, 0), vel.z);
+                vel = new Vec3(measuredVel.x, 0, measuredVel.z);
+            }
+            // AoTTG: the gas key is also jump while standing on the ground
+            if (jumpPressed) {
+                Vec3 base = physicsActive ? vel : measuredVel;
+                vel = new Vec3(base.x, JUMP_SPEED * s, base.z);
+                physicsActive = true;
+                sliding = false;
             }
         } else if (!physicsActive) {
-            physicsActive = true;
-            sliding = false;
-            vel = p.getDeltaMovement().scale(1.0 / TICK);
+            // Plain walking/falling stays vanilla. ODM physics takes over only once the gear is used in the air.
+            boolean engaged = leftHook.isVisible() || rightHook.isVisible() || gas || dashDir != null;
+            if (engaged) {
+                physicsActive = true;
+                sliding = false;
+                vel = measuredVel;
+            }
         } else {
             sliding = false;
         }
@@ -480,6 +502,7 @@ public final class OdmPhysics {
         pressedRight = false;
         pressedBoth = false;
         pressedGas = false;
+        gasEdge = false;
         pendingDash = null;
     }
 

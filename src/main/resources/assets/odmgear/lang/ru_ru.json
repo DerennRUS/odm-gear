@@ -10,5 +10,6 @@
   "key.odmgear.reel_out": "Отмотка (от себя)",
   "key.odmgear.toggle": "Вкл/выкл УПМ",
   "msg.odmgear.on": "УПМ: включено",
-  "msg.odmgear.off": "УПМ: выключено"
+  "msg.odmgear.off": "УПМ: выключено",
+  "item.odmgear.hook_tip": "Крюк"
 }

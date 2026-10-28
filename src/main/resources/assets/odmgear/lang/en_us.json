@@ -10,5 +10,6 @@
   "key.odmgear.reel_out": "Reel out",
   "key.odmgear.toggle": "Toggle ODM gear",
   "msg.odmgear.on": "ODM gear: ON",
-  "msg.odmgear.off": "ODM gear: OFF"
+  "msg.odmgear.off": "ODM gear: OFF",
+  "item.odmgear.hook_tip": "Hook"
 }
