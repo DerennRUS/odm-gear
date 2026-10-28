@@ -34,7 +34,7 @@ jobs:
         run: |
           mkdir -p run
           echo "eula=true" > run/eula.txt
-          printf 'level-type=odmgear\\:crags\nlevel-seed=odmgear\nspawn-protection=0\nonline-mode=false\nmax-world-size=29999984\n' > run/server.properties
+          printf 'level-type=odmgear\\:crags\nlevel-seed=odmgear\nspawn-protection=0\nonline-mode=false\nmax-world-size=29999984\nmax-tick-time=-1\n' > run/server.properties
           cat run/server.properties
           timeout 1500 gradle runServer --no-daemon || true
           ls -la run/terrain_dump || true

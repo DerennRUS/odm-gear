@@ -31,6 +31,12 @@ public final class TerrainDump {
             return;
         }
         MinecraftServer server = event.getServer();
+        Thread t = new Thread(() -> dump(server), "odmgear-terrain-dump");
+        t.setDaemon(true);
+        t.start();
+    }
+
+    private static void dump(MinecraftServer server) {
         try {
             ServerLevel level = server.overworld();
             ChunkGenerator gen = level.getChunkSource().getGenerator();
@@ -41,8 +47,8 @@ public final class TerrainDump {
             int maxY = level.getMaxBuildHeight();
 
             // top-down relief, 768 x 768 blocks, 2 blocks per pixel
-            int size = 384;
-            int step = 2;
+            int size = 256;
+            int step = 3;
             int[][] h = new int[size][size];
             for (int i = 0; i < size; i++) {
                 for (int j = 0; j < size; j++) {
@@ -110,6 +116,7 @@ public final class TerrainDump {
         }
         server.halt(false);
     }
+
 
     private static int clamp(double v) {
         return (int) Math.max(0, Math.min(255, v));
