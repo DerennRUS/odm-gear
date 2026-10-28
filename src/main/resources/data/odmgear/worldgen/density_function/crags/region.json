@@ -4,7 +4,7 @@
     "type": "minecraft:cache_2d",
     "argument": {
       "type": "minecraft:mul",
-      "argument1": 0.8,
+      "argument1": 1.0,
       "argument2": {
         "type": "minecraft:noise",
         "noise": "minecraft:erosion",
