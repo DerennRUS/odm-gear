@@ -26,7 +26,11 @@ import net.minecraft.world.phys.Vec3;
 public final class OdmPhysics {
     // --- AoTTG2 constants (units / seconds) ---
     /** BaseCharacter.Gravity = 20. Halved while pulled by a hook that is above the player. */
-    static final double GRAVITY = 20.0;
+    static final double GRAVITY = 40.0;
+    /** Vanilla Minecraft gravity, 0.08 blocks/tick^2 = 32 blocks/s^2. */
+    static final double VANILLA_GRAVITY_BLOCKS = 32.0;
+    /** Without gas, gravity grows by this much per second (AoTTG units/s^2 per s) up to vanilla gravity. */
+    static final double GRAVITY_RAMP = 10.0;
     /** Rigidbody mass = 0.5 - (acceleration - 100) * 0.001 with the default acceleration stat 115. */
     static final double MASS = 0.485;
     /** Rope pull force per hook: 10 when both hooks pull, 20 when only one pulls (ForceMode.Force). */
@@ -45,7 +49,8 @@ public final class OdmPhysics {
     static final double DASH_TIME = 0.5;
     static final double DASH_DECAY = 1.7;
     /** AoTTG jump: +8 vertical velocity. */
-    static final double JUMP_SPEED = 8.0;
+    /** Gas-jump height on the ground, in blocks (about a vanilla jump). */
+    static final double JUMP_HEIGHT = 1.3;
     /** Run speed stat 110 / 10. Landing faster than RunSpeed*sqrt(1.5) slides; slide ends below RunSpeed*1.2. */
     static final double RUN_SPEED = 11.0;
     static final double FIXED_STEP = 0.02;
@@ -86,6 +91,8 @@ public final class OdmPhysics {
     private double originalDashSpeed;
     private int reelInSteps;
     private double reelSmooth;
+    /** Extra gravity built up while gas is released (AoTTG units/s^2). */
+    private double gravityExtra;
     private double reelOutTime;
     public boolean gasInUse;
 
@@ -242,7 +249,7 @@ public final class OdmPhysics {
             // AoTTG: the gas key is also jump while standing on the ground
             if (jumpPressed) {
                 Vec3 base = physicsActive ? vel : measuredVel;
-                vel = new Vec3(base.x, JUMP_SPEED * s, base.z);
+                vel = new Vec3(base.x, Math.sqrt(2 * GRAVITY * s * JUMP_HEIGHT), base.z);
                 physicsActive = true;
                 sliding = false;
             }
@@ -360,7 +367,14 @@ public final class OdmPhysics {
                 }
                 // gravity (halved while a pulling hook is above us)
                 boolean lower = (leftHook.isPulling() && leftHook.pos.y > c.y) || (rightHook.isPulling() && rightHook.pos.y > c.y);
-                acc = acc.add(0, -GRAVITY * s * (lower ? 0.5 : 1.0), 0);
+                // gas held: base gravity; released: gravity ramps up toward vanilla Minecraft gravity
+                if (gas) {
+                    gravityExtra = 0;
+                } else {
+                    double maxExtra = Math.max(0, VANILLA_GRAVITY_BLOCKS / s - GRAVITY);
+                    gravityExtra = Math.min(maxExtra, gravityExtra + GRAVITY_RAMP * DT);
+                }
+                acc = acc.add(0, -(GRAVITY + gravityExtra) * s * (lower ? 0.5 : 1.0), 0);
 
                 vel = vel.add(acc.scale(DT));
                 // coasting: speed fades slowly while gas is not used; hard speed limit
