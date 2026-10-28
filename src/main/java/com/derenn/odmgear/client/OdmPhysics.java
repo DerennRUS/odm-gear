@@ -50,7 +50,7 @@ public final class OdmPhysics {
     static final double RUN_SPEED = 11.0;
     static final double FIXED_STEP = 0.02;
     /** Speed limit (AoTTG units/s). */
-    static final double MAX_SPEED = 250.0;
+    static final double MAX_SPEED = 100.0;
     /** Without gas the speed slowly fades by this much per second (AoTTG units/s^2). */
     static final double COAST_DECAY = 10.0;
     /** How fast reel in/out blends in (1/s), so reeling turns your momentum instead of snapping it. */
@@ -88,6 +88,8 @@ public final class OdmPhysics {
 
     // HUD info
     public boolean leftInRange, rightInRange;
+    /** Distance from the player to the block under the crosshair in AoTTG units, or -1 if nothing is hit. */
+    public double aimDistance = -1;
 
     private OdmPhysics() {
     }
@@ -189,6 +191,9 @@ public final class OdmPhysics {
         fireIfNeeded(p, leftHook, bothKey && !leftKey, aim, camPos, right, playerVel, s);
         fireIfNeeded(p, rightHook, bothKey && !rightKey, aim, camPos, right, playerVel, s);
         updateRangeHud(p, aim, camPos, right, s);
+        BlockHitResult aimHit = p.level().clip(new ClipContext(camPos, camPos.add(look.scale(Math.min(1000 * s, 512))),
+                ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p));
+        aimDistance = aimHit.getType() == HitResult.Type.BLOCK ? aimHit.getLocation().distanceTo(pos) / s : -1;
 
         // ---------- ground / air state ----------
         boolean fluid = p.isInWater() || p.isInLava() || p.onClimbable();
