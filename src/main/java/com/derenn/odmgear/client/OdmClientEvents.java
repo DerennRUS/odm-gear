@@ -1,6 +1,5 @@
 package com.derenn.odmgear.client;
 
-import com.derenn.odmgear.OdmConfig;
 import com.derenn.odmgear.OdmMod;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -197,10 +196,11 @@ public final class OdmClientEvents {
         // hook range indicators left/right of the crosshair
         g.drawString(mc.font, "<", cx - 14, cy - 4, ODM.leftInRange ? 0x55FF55 : 0xFF5555, true);
         g.drawString(mc.font, ">", cx + 10, cy - 4, ODM.rightInRange ? 0x55FF55 : 0xFF5555, true);
-        if (OdmConfig.speedometer()) {
-            double speed = ODM.displaySpeed(p);
-            int color = speed >= OdmPhysics.MAX_SPEED - 0.5 ? 0xFF6060 : 0xFFFFFF;
-            g.drawCenteredString(mc.font, String.format("%.1f u/s", speed), cx, cy + 10, color);
-        }
+        // distance to the block under the crosshair (blocks); red when out of hook range
+        double d = ODM.aimDistance;
+        double range = Hook.FLIGHT_SPEED * Hook.MAX_FLIGHT_TIME * OdmPhysics.scale();
+        String text = d < 0 ? "???" : String.valueOf((int) d);
+        int color = d < 0 || d > range ? 0xFF6060 : 0xFFFFFF;
+        g.drawCenteredString(mc.font, text, cx, cy + 10, color);
     }
 }

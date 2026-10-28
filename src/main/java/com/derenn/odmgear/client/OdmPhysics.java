@@ -97,6 +97,8 @@ public final class OdmPhysics {
 
     // HUD info
     public boolean leftInRange, rightInRange;
+    /** Distance in blocks from the player to the block under the crosshair, or -1 if nothing is hit. */
+    public double aimDistance = -1;
 
     private OdmPhysics() {
     }
@@ -198,6 +200,9 @@ public final class OdmPhysics {
         fireIfNeeded(p, leftHook, bothKey && !leftKey, aim, camPos, right, playerVel, s);
         fireIfNeeded(p, rightHook, bothKey && !rightKey, aim, camPos, right, playerVel, s);
         updateRangeHud(p, aim, camPos, right, s);
+        BlockHitResult aimHit = p.level().clip(new ClipContext(camPos, camPos.add(look.scale(Math.min(1000 * s, 512))),
+                ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p));
+        aimDistance = aimHit.getType() == HitResult.Type.BLOCK ? aimHit.getLocation().distanceTo(pos) : -1;
 
         // ---------- ground / air state ----------
         boolean fluid = p.isInWater() || p.isInLava() || p.onClimbable();
