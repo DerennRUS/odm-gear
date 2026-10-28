@@ -7,7 +7,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
+import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
 import net.minecraft.world.level.levelgen.feature.Feature;
@@ -48,13 +50,31 @@ public class DebrisCleanupFeature extends Feature<NoneFeatureConfiguration> {
 
         BitSet solid = new BitSet(size * size * hgt);
         BlockPos.MutableBlockPos m = new BlockPos.MutableBlockPos();
-        for (int x = 0; x < size; x++) {
-            for (int z = 0; z < size; z++) {
-                for (int y = 0; y < hgt; y++) {
-                    m.set(bx + x, minY + y, bz + z);
-                    BlockState st = level.getBlockState(m);
-                    if (!st.isAir() && st.getFluidState().isEmpty()) {
-                        solid.set(idx(x, y, z, size, hgt));
+        // read the 3x3 chunks section by section (much faster than per-block world lookups)
+        for (int dcx = 0; dcx < 3; dcx++) {
+            for (int dcz = 0; dcz < 3; dcz++) {
+                ChunkAccess chunk = level.getChunk((bx >> 4) + dcx, (bz >> 4) + dcz);
+                LevelChunkSection[] sections = chunk.getSections();
+                for (int si = 0; si < sections.length; si++) {
+                    LevelChunkSection sec = sections[si];
+                    if (sec == null || sec.hasOnlyAir()) {
+                        continue;
+                    }
+                    int baseY = si * 16;
+                    for (int ly = 0; ly < 16; ly++) {
+                        int y = baseY + ly;
+                        if (y >= hgt) {
+                            break;
+                        }
+                        for (int lx = 0; lx < 16; lx++) {
+                            int x = dcx * 16 + lx;
+                            for (int lz = 0; lz < 16; lz++) {
+                                BlockState st = sec.getBlockState(lx, ly, lz);
+                                if (!st.isAir() && st.getFluidState().isEmpty()) {
+                                    solid.set(idx(x, y, dcz * 16 + lz, size, hgt));
+                                }
+                            }
+                        }
                     }
                 }
             }
