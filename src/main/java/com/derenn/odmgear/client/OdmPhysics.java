@@ -65,7 +65,7 @@ public final class OdmPhysics {
     static final double RUN_SPEED = 11.0;
     static final double FIXED_STEP = 0.02;
     /** Speed limit (AoTTG units/s). */
-    static final double MAX_SPEED = 125.0;
+    static final double MAX_SPEED = 200.0;
     /** Without gas the speed slowly fades by this much per second (AoTTG units/s^2). */
     static final double COAST_DECAY = 20.0;
     /** Gas acceleration (AoTTG units/s^2) depending on current speed: 10 up to 50, 5 up to 75, 3 up to 100, 1 up to 125. */

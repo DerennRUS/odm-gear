@@ -65,8 +65,8 @@ public class TitanEntity extends Monster {
     public static final int EYE_TEXTURES = 11;
 
     // --- behaviour constants ---
-    static final double DETECT_RANGE = 50.0;
-    static final double LOSE_RANGE = 100.0;
+    static final double DETECT_RANGE = 150.0;
+    static final double LOSE_RANGE = 300.0;
     /** Walking speed in titan heights per second (run.walk played at ~1.5x). */
     static final double WALK_SPEED = 0.32;
     /** Model units the body advances per run.walk cycle (41 frames). */

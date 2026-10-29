@@ -215,9 +215,9 @@ public final class TitanClient {
                 OdmNetwork.CHANNEL.sendToServer(new OdmNetwork.TitanHit(t.getId(), part.ordinal(), speed));
                 if (part == TitanGeometry.Part.NAPE) {
                     // same formula as the server: weapon damage x speed / 20 (health points);
-                    // shown as hearts x 100 / 2 x 15 (= hearts x 750)
+                    // shown as hearts x 100 / 2 x 15 x 2/3 (= hearts x 500)
                     double dmg = p.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE) * speed / 20.0;
-                    int shown = (int) Math.round(dmg / 2.0 * 100.0 / 2.0 * 15.0);
+                    int shown = (int) Math.round(dmg / 2.0 * 500.0);
                     DamagePopups.add(TitanGeometry.napePoint(TitanGeometry.frame(t, 1f, false)), shown);
                     playNapeHitSound(shown);
                 }

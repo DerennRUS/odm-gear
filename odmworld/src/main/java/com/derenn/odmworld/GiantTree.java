@@ -21,23 +21,24 @@ import java.util.Random;
 /**
  * One giant tree (spruce wood, oak leaves), 100 blocks tall:
  * <ul>
- *   <li>trunk 10 blocks wide at the base, 7 at the end of the bare part (40-45), tapering to a point near the top;</li>
+ *   <li>trunk 10 blocks wide at the base, ~7 at 40-45, tapering to a point near the top; no branches below 30-35;</li>
  *   <li>roots around the base, never higher than 5 blocks;</li>
- *   <li>from the bare part up to 75: one thick branch per 7 blocks of height in a random direction, 20 long and
+ *   <li>from the bare part up to 75: one thick branch per 7 blocks of height in a random direction, 35 long and
  *       4 thick at the trunk down to 1 at the tip, getting smaller toward the top, flat enough to stand on,
  *       with a little foliage at the tip and on side twigs;</li>
  *   <li>from 75: a crown of smaller rising branches and leaf clusters that shrinks toward the top.</li>
  * </ul>
- * Trees sit on a jittered 60-block grid (offset -6..+6), so neighbours are 48-72 blocks apart along the grid.
+ * Trees sit on a jittered 40-block grid (offset -4..+4), so neighbours are 32-48 blocks apart along the grid.
  */
 public final class GiantTree {
-    public static final int CELL = 60;
-    public static final int JITTER = 6;
+    public static final int CELL = 40;
+    public static final int JITTER = 4;
     /** Max horizontal distance of any block from the trunk axis. */
-    public static final int REACH = 32;
+    public static final int REACH = 46;
     static final double HEIGHT = 100;
     static final double TRUNK_TOP = 95;
     static final double CROWN_START = 75;
+    static final double TAPER_HEIGHT = 42.5;
 
     private static final BlockState TRUNK = Blocks.SPRUCE_LOG.defaultBlockState().setValue(RotatedPillarBlock.AXIS, Direction.Axis.Y);
     private static final BlockState WOOD = Blocks.SPRUCE_WOOD.defaultBlockState();
@@ -105,7 +106,7 @@ public final class GiantTree {
         this.y0 = y0;
         this.hashSeed = seed;
         Random rng = new Random(seed);
-        clearHeight = 40 + rng.nextInt(6);
+        clearHeight = 30 + rng.nextInt(6);
         buildRoots(rng);
         buildMainBranches(rng);
         buildCrown(rng);
@@ -113,11 +114,12 @@ public final class GiantTree {
 
     /** Trunk radius at height h above the ground. */
     double trunkRadius(double h) {
-        if (h <= clearHeight) {
-            return lerp(5.0, 3.5, Math.max(0, h) / clearHeight);
+        // 10 wide at the base, ~7 at 40-45, 5 at the crown
+        if (h <= TAPER_HEIGHT) {
+            return lerp(5.0, 3.5, Math.max(0, h) / TAPER_HEIGHT);
         }
         if (h <= CROWN_START) {
-            return lerp(3.5, 2.5, (h - clearHeight) / (CROWN_START - clearHeight));
+            return lerp(3.5, 2.5, (h - TAPER_HEIGHT) / (CROWN_START - TAPER_HEIGHT));
         }
         return lerp(2.5, 0.8, Math.min(1, (h - CROWN_START) / (TRUNK_TOP - CROWN_START)));
     }
@@ -154,7 +156,7 @@ public final class GiantTree {
             }
             double f = (bucket - clearHeight) / (CROWN_START - clearHeight); // 0 low .. 1 high
             double r0 = 2.0 - 0.6 * f;            // 4 blocks thick at the bottom, ~3 near the crown
-            double len = 20.0 - 8.0 * f;          // 20 long at the bottom, ~12 near the crown
+            double len = 35.0 - 14.0 * f;         // 35 long at the bottom, ~21 near the crown
             double room = Math.min(7.0, CROWN_START - bucket) - r0 - 0.5;
             double hb = bucket + r0 + rng.nextDouble() * Math.max(0, room); // bottom of the branch above the bare part
             yaw += Math.toRadians(137.5 + (rng.nextDouble() - 0.5) * 50);
@@ -179,9 +181,9 @@ public final class GiantTree {
             double leaf = 1.0 - 0.3 * f;
             double[] tip = pts[steps];
             blobs.add(new double[]{tip[0], tip[1] + 1.0, tip[2], 3.0 * leaf, 2.0 * leaf, 3.0 * leaf});
-            // two short side twigs with a little foliage, so the top of the branch stays walkable
+            // a few short side twigs with a little foliage, so the top of the branch stays walkable
             int side = rng.nextBoolean() ? 1 : -1;
-            for (double s : new double[]{0.5 + rng.nextDouble() * 0.1, 0.75 + rng.nextDouble() * 0.1}) {
+            for (double s : new double[]{0.35 + rng.nextDouble() * 0.1, 0.6 + rng.nextDouble() * 0.1, 0.82 + rng.nextDouble() * 0.08}) {
                 double[] p = pts[(int) Math.round(s * steps)];
                 double a = p[4] + side * Math.toRadians(65 + rng.nextDouble() * 20);
                 double tl = (4 + rng.nextDouble() * 2) * leaf;
