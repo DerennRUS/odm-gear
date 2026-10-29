@@ -196,7 +196,14 @@ public final class TitanClient {
             TitanGeometry.Part part = TitanGeometry.zoneHit(t, from, now, RADIUS, look, MIN_DOT, 1f);
             if (part != null) {
                 hitThisSlash.add(t.getId());
-                OdmNetwork.CHANNEL.sendToServer(new OdmNetwork.TitanHit(t.getId(), part.ordinal(), speedUnits()));
+                float speed = speedUnits();
+                OdmNetwork.CHANNEL.sendToServer(new OdmNetwork.TitanHit(t.getId(), part.ordinal(), speed));
+                if (part == TitanGeometry.Part.NAPE) {
+                    // same formula as the server: weapon damage x speed / 20 (health points); shown as hearts x 100
+                    double dmg = p.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE) * speed / 20.0;
+                    int shown = (int) Math.round(dmg / 2.0 * 100.0);
+                    DamagePopups.add(TitanGeometry.napePoint(TitanGeometry.frame(t, 1f, false)), shown);
+                }
                 any = true;
             }
         }

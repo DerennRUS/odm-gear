@@ -22,6 +22,8 @@ import org.lwjgl.glfw.GLFW;
 public final class OdmClientEvents {
     private static final OdmPhysics ODM = OdmPhysics.INSTANCE;
     private static final long DOUBLE_TAP_NS = 200_000_000L;
+    /** The HUD shows the speed 1.5x smaller than the physics units. */
+    static final double SPEED_DISPLAY_DIVISOR = 1.5;
     private static final long[] lastTap = new long[4];
 
     private OdmClientEvents() {
@@ -184,6 +186,7 @@ public final class OdmClientEvents {
             return;
         }
         RopeRenderer.render(event.getPoseStack(), event.getCamera().getPosition(), event.getPartialTick());
+        DamagePopups.render(event.getPoseStack(), event.getCamera(), event.getPartialTick());
     }
 
     @SubscribeEvent
@@ -212,8 +215,10 @@ public final class OdmClientEvents {
         String text = d < 0 ? "???" : String.valueOf((int) d);
         int color = d < 0 || d > range ? 0xFF6060 : 0xFFFFFF;
         g.drawCenteredString(mc.font, text, cx, cy + 10, color);
+        // current speed (AoTTG units / 1.5)
+        g.drawCenteredString(mc.font, String.valueOf(Math.round(TitanClient.speedUnits() / SPEED_DISPLAY_DIVISOR)), cx, cy + 20, 0x9FD8FF);
         if (TitanClient.isCharging()) {
-            g.drawCenteredString(mc.font, "\u2694", cx, cy + 20, 0xFFD040); // blades ready
+            g.drawCenteredString(mc.font, "\u2694", cx, cy + 30, 0xFFD040); // blades ready
         }
     }
 }
