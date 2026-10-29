@@ -29,6 +29,9 @@ import java.util.Set;
 public final class TitanClient {
     /** Radius of the blade zone around the player, in blocks. */
     static final double RADIUS = 2.0;
+    /** The sphere (centred at mid-body, 0.9 above the feet) is cut flat: from 0.2 above the feet to 1.9 above the feet. */
+    static final double ZONE_BELOW = 0.7;
+    static final double ZONE_ABOVE = 1.0;
     /** Dead zone straight behind the camera: 90 degrees wide (the zone covers the other 270). */
     static final double REAR_CONE_DEGREES = 90.0;
     static final double MIN_DOT = Math.cos(Math.toRadians(180.0 - REAR_CONE_DEGREES / 2.0));
@@ -205,7 +208,7 @@ public final class TitanClient {
             if (hitThisSlash.contains(t.getId()) || t.distanceToSqr(p) > Math.pow(t.heightBlocks() * 1.5 + 12, 2)) {
                 continue;
             }
-            TitanGeometry.Part part = TitanGeometry.zoneHit(t, from, now, RADIUS, look, MIN_DOT, 1f);
+            TitanGeometry.Part part = TitanGeometry.zoneHit(t, from, now, RADIUS, ZONE_BELOW, ZONE_ABOVE, look, MIN_DOT, 1f);
             if (part != null) {
                 hitThisSlash.add(t.getId());
                 float speed = speedUnits();

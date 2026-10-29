@@ -325,7 +325,7 @@ public final class TitanGeometry {
      * A hurtbox counts if it touches the zone and does not lie inside the rear cone behind the camera
      * (dot(direction to hurtbox, look) >= minDot). Returns the highest-priority part (nape first) or null.
      */
-    public static Part zoneHit(TitanEntity e, Vec3 a, Vec3 b, double radius, Vec3 look, double minDot, float partial) {
+    public static Part zoneHit(TitanEntity e, Vec3 a, Vec3 b, double radius, double below, double above, Vec3 look, double minDot, float partial) {
         Frame f = frame(e, partial, false);
         TitanModelData d = TitanModelData.get();
         double[] ma = toModel(f, a);
@@ -347,6 +347,11 @@ public final class TitanGeometry {
             }
             Vec3 center = bonePoint(f, s.bone, (s.x0 + s.x1) * 0.5f, (s.y0 + s.y1) * 0.5f, (s.z0 + s.z1) * 0.5f);
             Vec3 at = a.lerp(b, t);
+            // the zone is cut flat: only from 'below' under to 'above' over the path (the hurtbox may overlap the cut)
+            double vh = (s.box ? (s.y1 - s.y0) * 0.5 : s.r + Math.abs(s.y1 - s.y0) * 0.5) * f.scale;
+            if (center.y - vh > at.y + above || center.y + vh < at.y - below) {
+                continue;
+            }
             Vec3 dir = center.subtract(at);
             double len = dir.length();
             if (len < 1.0E-6 || dir.scale(1.0 / len).dot(look) >= minDot) {

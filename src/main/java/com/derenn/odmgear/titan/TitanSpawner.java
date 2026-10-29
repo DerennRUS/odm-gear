@@ -19,7 +19,7 @@ public final class TitanSpawner {
     static final double MIN_PLAYER_DIST = 50;
     static final double MAX_DIST = 96;
     /** Chance per player per check (every 5 s). */
-    static final float CHANCE = 0.35f;
+    static final float CHANCE = 1.0f;
 
     private TitanSpawner() {
     }
