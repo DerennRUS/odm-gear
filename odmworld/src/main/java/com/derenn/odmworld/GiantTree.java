@@ -195,9 +195,9 @@ public final class GiantTree {
 
     private void buildCrown(Random rng) {
         double yaw = rng.nextDouble() * Math.PI * 2;
-        for (double h = CROWN_START + 1 + rng.nextDouble() * 1.5; h <= 91; h += 2.0 + rng.nextDouble() * 1.2) {
+        for (double h = CROWN_START + 1 + rng.nextDouble() * 1.0; h <= 91; h += 1.4 + rng.nextDouble() * 1.0) {
             double t = (h - (CROWN_START + 1)) / (91 - (CROWN_START + 1));
-            double len = 11.0 - 7.0 * t;
+            double len = 12.0 - 8.0 * t;
             double r0 = 1.2 - 0.6 * t;
             double elev = Math.toRadians(25 + 20 * t + (rng.nextDouble() - 0.5) * 10);
             yaw += Math.toRadians(137.5 + (rng.nextDouble() - 0.5) * 40);
@@ -208,14 +208,15 @@ public final class GiantTree {
             double rm = (r0 + 0.4) * 0.5;
             tubes.add(new double[]{sx, sy, sz, mx, my, mz, r0, rm});
             tubes.add(new double[]{mx, my, mz, ex, ey, ez, rm, 0.4});
-            double lr = 3.6 - 1.2 * t;
+            double lr = 4.3 - 1.7 * t;
             blobs.add(new double[]{ex, ey + 0.5, ez, lr, lr * 0.72, lr});
-            if (len > 6) {
-                blobs.add(new double[]{mx, my + 1.0, mz, 2.0, 1.5, 2.0});
+            if (len > 5) {
+                blobs.add(new double[]{mx, my + 1.0, mz, 2.6, 1.9, 2.6});
             }
         }
-        blobs.add(new double[]{cx, y0 + 92.5, cz, 4.0, 3.0, 4.0});
-        blobs.add(new double[]{cx, y0 + 96.5, cz, 2.6, 2.6, 2.6});
+        blobs.add(new double[]{cx, y0 + 88.5, cz, 4.8, 3.2, 4.8});
+        blobs.add(new double[]{cx, y0 + 92.5, cz, 4.2, 3.2, 4.2});
+        blobs.add(new double[]{cx, y0 + 96.5, cz, 3.0, 2.8, 3.0});
     }
 
     private static double lerp(double a, double b, double t) {
@@ -241,7 +242,7 @@ public final class GiantTree {
         int z0 = Math.max(minZ, cz - 6), z1 = Math.min(maxZ, cz + 6);
         if (x0 <= x1 && z0 <= z1) {
             for (int y = Math.max(minY, y0 - 6); y <= Math.min(maxY, y0 + (int) TRUNK_TOP); y++) {
-                double r = trunkRadius(y - y0 + 0.5);
+                double r = trunkRadius(y - y0 + 0.5) + 0.05;
                 double r2 = r * r;
                 for (int x = x0; x <= x1; x++) {
                     double dx = x + 0.5 - cx;
