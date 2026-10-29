@@ -218,9 +218,8 @@ public final class OdmPhysics {
         fireIfNeeded(p, leftHook, bothKey && !leftKey, aim, camPos, right, playerVel, s);
         fireIfNeeded(p, rightHook, bothKey && !rightKey, aim, camPos, right, playerVel, s);
         updateRangeHud(p, aim, camPos, right, s);
-        BlockHitResult aimHit = p.level().clip(new ClipContext(camPos, camPos.add(look.scale(Math.min(1000 * s, 512))),
-                ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p));
-        aimDistance = aimHit.getType() == HitResult.Type.BLOCK ? aimHit.getLocation().distanceTo(pos) : -1;
+        Vec3 aimHit = aimHit(p, camPos, look, s);
+        aimDistance = aimHit != null ? aimHit.distanceTo(pos) : -1;
 
         // ---------- ground / air state ----------
         boolean fluid = p.isInWater() || p.isInLava() || p.onClimbable();
@@ -541,14 +540,24 @@ public final class OdmPhysics {
             return false;
         }
         Vec3 to = from.add(dir.normalize().scale(range));
-        return p.level().clip(new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p)).getType() == HitResult.Type.BLOCK;
+        return p.level().clip(new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p)).getType() == HitResult.Type.BLOCK
+                || TitanPick.raycast(p.level(), from, to) != null;
     }
 
-    private static Vec3 aimPoint(LocalPlayer p, Vec3 camPos, Vec3 look, double s) {
+    /** First block or titan body under the crosshair, or null. */
+    private static Vec3 aimHit(LocalPlayer p, Vec3 camPos, Vec3 look, double s) {
         double max = Math.min(1000 * s, 512);
         Vec3 end = camPos.add(look.scale(max));
         BlockHitResult hit = p.level().clip(new ClipContext(camPos, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p));
-        return hit.getType() == HitResult.Type.BLOCK ? hit.getLocation() : end;
+        Vec3 result = hit.getType() == HitResult.Type.BLOCK ? hit.getLocation() : null;
+        Vec3 titanEnd = result != null ? result : end;
+        TitanPick.Hit th = TitanPick.raycast(p.level(), camPos, titanEnd);
+        return th != null ? th.point() : result;
+    }
+
+    private static Vec3 aimPoint(LocalPlayer p, Vec3 camPos, Vec3 look, double s) {
+        Vec3 hit = aimHit(p, camPos, look, s);
+        return hit != null ? hit : camPos.add(look.scale(Math.min(1000 * s, 512)));
     }
 
     /** Where the rope leaves the body: waist height, a little to the side. */

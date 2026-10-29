@@ -10,7 +10,6 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
-import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
 import org.joml.Matrix3f;
@@ -23,10 +22,8 @@ public class TitanRenderer extends EntityRenderer<TitanEntity> {
     private static final ResourceLocation BODY1 = tex("body1");
     private static final ResourceLocation BODY2 = tex("body2");
     private static final ResourceLocation EYES = tex("eyes");
-    private static final float BLEND_TICKS = 4f;
 
     private float[] pose;
-    private float[] prevPose;
     private float[] skinned = new float[3 * 512];
 
     public TitanRenderer(EntityRendererProvider.Context ctx) {
@@ -48,26 +45,15 @@ public class TitanRenderer extends EntityRenderer<TitanEntity> {
         TitanModelData data = TitanModelData.get();
         if (pose == null) {
             pose = new float[data.boneCount * 12];
-            prevPose = new float[data.boneCount * 12];
         }
-        e.updateClientBlend(partialTick);
-        int anim = e.anim();
-        data.pose(anim, e.animFrame(partialTick), e.isLooping(anim), pose);
-        if (e.clientPrevAnim >= 0) {
-            float t = (e.tickCount - e.clientBlendStart + partialTick) / BLEND_TICKS;
-            if (t < 1f) {
-                float prevFrame = e.clientPrevAnimFrame + (e.tickCount - e.clientBlendStart + partialTick);
-                data.pose(e.clientPrevAnim, prevFrame, e.isLooping(e.clientPrevAnim), prevPose);
-                TitanModelData.blend(prevPose, pose, t, pose);
-            }
-        }
+        e.computePose(partialTick, pose);
 
         float scale = e.heightBlocks() / data.height;
         float bodyYaw = net.minecraft.util.Mth.rotLerp(partialTick, e.yBodyRotO, e.yBodyRot);
         ps.pushPose();
         ps.mulPose(Axis.YP.rotationDegrees(-bodyYaw));
         ps.scale(scale, scale, scale);
-        int overlay = LivingEntityRenderer.getOverlayCoords(e, 0f);
+        int overlay = OverlayTexture.pack(OverlayTexture.u(0f), OverlayTexture.v(e.hurtTime > 0 && e.isAlive()));
 
         int body = e.body();
         int head = e.head();

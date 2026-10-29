@@ -14,11 +14,11 @@ STEP = 3  # 60 fps source -> 20 fps (one Minecraft tick)
 ANIMS = [
     'idle', 'run.walk', 'run.abnormal', 'sit_down', 'sit_idle', 'sit_getup', 'turnaround.L', 'turnaround.R',
     'attack.slap.face', 'attack.slap.back', 'attack.swing.l', 'attack.swing.r', 'attack.stomp', 'attack.kick',
-    'attack.comboPunch', 'attack.front.ground',
+    'attack.comboPunch', 'attack.combo', 'attack.front.ground',
     'attack.anti.AE.l', 'attack.anti.AE.r', 'attack.anti.AE.low.l', 'attack.anti.AE.low.r', 'attack.anti.AE.high.l', 'attack.anti.AE.high.r',
     'grab.ground.front.l', 'grab.ground.front.r', 'grab.ground.back.l', 'grab.ground.back.r', 'grab.core.L', 'grab.core.R',
     'grab.air.far.l', 'grab.air.far.r', 'grab.air.short.l', 'grab.air.short.r', 'grab.high.l', 'grab.high.r',
-    'grab.head.front.r', 'grab.head.back.l', 'grab.head.back.r', 'grab.back.l', 'grab.back.r', 'grab.stomach.l', 'grab.stomach.r',
+    'grab.head.front.r', 'grab.head.front.1', 'grab.head.back.l', 'grab.head.back.r', 'grab.back.l', 'grab.back.r', 'grab.stomach.l', 'grab.stomach.r',
     'eat.fast.L', 'eat.fast.R', 'die.front', 'die.back', 'die.headOff', 'handhurt.l', 'handhurt.r', 'sit_hit_eye', 'hit.eye',
     'laugh', 'T-pose', 'sit_hunt_down', 'sit_die', 'die.ground', 'eat.l', 'eat.r', 'hit.eren.L', 'hit.eren.R',
 ]

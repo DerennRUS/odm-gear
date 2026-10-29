@@ -89,7 +89,7 @@ public final class RopeRenderer {
                     sim.attachId = h.attachId;
                     sim.ready = true;
                 }
-                stepSim(sim, anchor, h.pos, gravity, frameDt);
+                stepSim(sim, anchor, h.renderPos(partialTick), gravity, frameDt);
                 points = List.of(sim.p);
                 Vec3 last = sim.p[SEGMENTS].subtract(sim.p[SEGMENTS - 1]);
                 tipDir = last.lengthSqr() > 1.0E-8 ? last.normalize() : h.flightDir;

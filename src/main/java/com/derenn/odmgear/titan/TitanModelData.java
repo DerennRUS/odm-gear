@@ -31,6 +31,11 @@ public final class TitanModelData {
     public final float[][] animData;
     public final Map<String, Integer> animIndex = new HashMap<>();
     public final Map<String, Mesh> meshes = new HashMap<>();
+    /** Forearm + hand bones of each arm (they disappear while the arm is cut off). */
+    public final int[] armBonesL;
+    public final int[] armBonesR;
+    private final boolean[] isArmL;
+    private final boolean[] isArmR;
     /** Top of the head in model units (titan height). */
     public final float height;
 
@@ -84,6 +89,22 @@ public final class TitanModelData {
             boneTail[i] = vec(b.getAsJsonArray("tail"));
             boneIndex.put(boneNames[i], i);
         }
+        isArmL = new boolean[boneCount];
+        isArmR = new boolean[boneCount];
+        java.util.List<Integer> al = new java.util.ArrayList<>(), ar = new java.util.ArrayList<>();
+        for (int i = 0; i < boneCount; i++) {
+            String n = boneNames[i];
+            if (n.startsWith("forearm.L") || n.startsWith("hand.L")) {
+                isArmL[i] = true;
+                al.add(i);
+            }
+            if (n.startsWith("forearm.R") || n.startsWith("hand.R")) {
+                isArmR[i] = true;
+                ar.add(i);
+            }
+        }
+        armBonesL = al.stream().mapToInt(Integer::intValue).toArray();
+        armBonesR = ar.stream().mapToInt(Integer::intValue).toArray();
         float top = 0;
         for (JsonElement me : root.getAsJsonArray("meshes")) {
             JsonObject m = me.getAsJsonObject();
@@ -179,6 +200,27 @@ public final class TitanModelData {
         int o1 = f1 * stride;
         for (int i = 0; i < stride; i++) {
             out[i] = d[o0 + i] + (d[o1 + i] - d[o0 + i]) * t;
+        }
+    }
+
+    public boolean isArmBone(int bone, boolean left) {
+        return bone >= 0 && bone < boneCount && (left ? isArmL[bone] : isArmR[bone]);
+    }
+
+    /** Shrinks a cut-off arm to 1% around the elbow (AoTTG2 scales the forearm to 0.01). */
+    public void collapseArm(float[] pose, boolean left) {
+        int fore = boneIndex.get(left ? "forearm.L" : "forearm.R");
+        float[] h = boneHead[fore];
+        float[] p = new float[3];
+        transform(pose, fore, h[0], h[1], h[2], p);
+        for (int b : left ? armBonesL : armBonesR) {
+            int o = b * 12;
+            for (int r = 0; r < 3; r++) {
+                pose[o + r * 4] *= 0.01f;
+                pose[o + r * 4 + 1] *= 0.01f;
+                pose[o + r * 4 + 2] *= 0.01f;
+                pose[o + r * 4 + 3] = 0.99f * p[r] + 0.01f * pose[o + r * 4 + 3];
+            }
         }
     }
 

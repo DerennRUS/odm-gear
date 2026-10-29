@@ -43,6 +43,13 @@ public final class OdmClientEvents {
         if (event.player != mc.player || mc.player == null) {
             return;
         }
+        if (TitanClient.applyHeld(mc.player)) {
+            // grabbed by a titan: no gear, no movement
+            ODM.vel = Vec3.ZERO;
+            ODM.reset(mc.player);
+            mc.player.setDeltaMovement(Vec3.ZERO);
+            return;
+        }
         ODM.tick(mc.player, mc);
     }
 

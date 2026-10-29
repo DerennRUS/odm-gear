@@ -35,6 +35,10 @@ public final class Hook {
     private Vec3 relVel = Vec3.ZERO;
     private double life;
     private BlockPos hookedBlock;
+    /** Set when hooked onto a titan: the hook sticks to one triangle of its mesh and moves with it. */
+    public com.derenn.odmgear.titan.TitanEntity hookedTitan;
+    private int titanTri;
+    private float titanU, titanV;
 
     /** "_launchLeft/_launchRight" in AoTTG: true while the rope is pulling. */
     public boolean launch;
@@ -94,7 +98,25 @@ public final class Hook {
         if (state == State.FLYING) {
             Vec3 next = pos.add(baseVel.add(relVel).scale(dt));
             BlockHitResult hit = level.clip(new ClipContext(pos, next, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, owner));
+            double seg = next.distanceTo(pos);
+            double blockT = hit.getType() == HitResult.Type.BLOCK && seg > 1.0E-9 ? hit.getLocation().distanceTo(pos) / seg : 2;
+            TitanPick.Hit th = TitanPick.raycast(level, pos, next);
+            if (th != null && th.t() <= blockT) {
+                pos = th.point();
+                hookedBlock = null;
+                hookedTitan = th.titan();
+                titanTri = th.mesh().tri();
+                titanU = th.mesh().u();
+                titanV = th.mesh().v();
+                state = State.HOOKED;
+                launch = true;
+                launchTime = 0;
+                attachId++;
+                nodes.add(pos);
+                return true;
+            }
             if (hit.getType() == HitResult.Type.BLOCK) {
+                hookedTitan = null;
                 pos = hit.getLocation();
                 hookedBlock = hit.getBlockPos();
                 state = State.HOOKED;
@@ -120,10 +142,32 @@ public final class Hook {
             if (life > RETRACT_TIME) {
                 state = State.IDLE;
             }
+        } else if (state == State.HOOKED && hookedTitan != null) {
+            Vec3 p = null;
+            if (!hookedTitan.isRemoved() && hookedTitan.isAlive()
+                    && !com.derenn.odmgear.titan.TitanGeometry.triOnDisabledArm(hookedTitan, titanTri, 1f)) {
+                p = com.derenn.odmgear.titan.TitanGeometry.surfacePoint(hookedTitan, titanTri, titanU, titanV, 1f);
+            }
+            if (p == null) {
+                release();
+            } else {
+                pos = p;
+            }
         } else if (state == State.HOOKED && hookedBlock != null && level.getBlockState(hookedBlock).isAir()) {
             release();
         }
         return false;
+    }
+
+    /** Hook position for rendering (follows an animated titan smoothly between ticks). */
+    public Vec3 renderPos(float partialTick) {
+        if (state == State.HOOKED && hookedTitan != null && hookedTitan.isAlive()) {
+            Vec3 p = com.derenn.odmgear.titan.TitanGeometry.surfacePoint(hookedTitan, titanTri, titanU, titanV, partialTick);
+            if (p != null) {
+                return p;
+            }
+        }
+        return pos;
     }
 
     public void release() {
@@ -131,5 +175,6 @@ public final class Hook {
         state = State.IDLE;
         launch = false;
         hookedBlock = null;
+        hookedTitan = null;
     }
 }

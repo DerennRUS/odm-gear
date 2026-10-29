@@ -37,7 +37,7 @@ public class OdmMod {
     public static final DeferredRegister<EntityType<?>> ENTITIES = DeferredRegister.create(ForgeRegistries.ENTITY_TYPES, MODID);
     public static final RegistryObject<EntityType<TitanEntity>> TITAN = ENTITIES.register("titan",
             () -> EntityType.Builder.<TitanEntity>of(TitanEntity::new, MobCategory.MONSTER)
-                    .sized(3f, 10f).clientTrackingRange(20).updateInterval(1).build("titan"));
+                    .sized(3f, 10f).fireImmune().clientTrackingRange(20).updateInterval(1).build("titan"));
     public static final RegistryObject<Item> TITAN_SPAWN_EGG = ITEMS.register("titan_spawn_egg",
             () -> new ForgeSpawnEggItem(TITAN, 0xD9A27E, 0x6B3A2C, new Item.Properties()));
 
@@ -54,6 +54,8 @@ public class OdmMod {
         modBus.addListener(this::addCreative);
         ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, OdmConfig.SPEC);
         MinecraftForge.EVENT_BUS.addListener(this::onFall);
+        MinecraftForge.EVENT_BUS.addListener(com.derenn.odmgear.titan.TitanSpawner::onLevelTick);
+        com.derenn.odmgear.net.OdmNetwork.register();
     }
 
     private void entityAttributes(EntityAttributeCreationEvent event) {
