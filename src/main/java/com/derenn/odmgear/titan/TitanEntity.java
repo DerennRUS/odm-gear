@@ -1397,4 +1397,23 @@ public class TitanEntity extends Monster {
     public boolean removeWhenFarAway(double distanceToClosestPlayer) {
         return natural;
     }
+
+    /** Natural titans vanish only when every player is more than 512 blocks away; no vanilla random despawn. */
+    static final double DESPAWN_DISTANCE = 512.0;
+
+    @Override
+    public void checkDespawn() {
+        if (level().getDifficulty() == net.minecraft.world.Difficulty.PEACEFUL && shouldDespawnInPeaceful()) {
+            discard();
+            return;
+        }
+        noActionTime = 0;
+        if (!natural || isPersistenceRequired()) {
+            return;
+        }
+        Player p = level().getNearestPlayer(this, -1.0);
+        if (p == null || p.distanceToSqr(this) > DESPAWN_DISTANCE * DESPAWN_DISTANCE) {
+            discard();
+        }
+    }
 }

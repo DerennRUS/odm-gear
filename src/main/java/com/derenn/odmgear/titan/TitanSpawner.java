@@ -10,19 +10,16 @@ import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraft.world.phys.AABB;
 import net.minecraftforge.event.TickEvent;
 
 /**
- * Natural titan spawning: overworld, daytime only, never closer than 50 blocks to a player
- * and never within 50 blocks of another titan.
+ * Natural titan spawning: overworld, daytime only, never closer than 50 blocks to a player.
  */
 public final class TitanSpawner {
     static final double MIN_PLAYER_DIST = 50;
-    static final double MIN_TITAN_DIST = 50;
     static final double MAX_DIST = 96;
     /** Chance per player per check (every 5 s). */
-    static final float CHANCE = 0.15f;
+    static final float CHANCE = 0.35f;
 
     private TitanSpawner() {
     }
@@ -71,17 +68,6 @@ public final class TitanSpawner {
                 }
             }
             if (playerNear) {
-                continue;
-            }
-            boolean titanNear = false;
-            for (TitanEntity other : level.getEntitiesOfClass(TitanEntity.class, new AABB(pos).inflate(MIN_TITAN_DIST, 256, MIN_TITAN_DIST))) {
-                double dx = other.getX() - cx, dz = other.getZ() - cz;
-                if (dx * dx + dz * dz < MIN_TITAN_DIST * MIN_TITAN_DIST) {
-                    titanNear = true;
-                    break;
-                }
-            }
-            if (titanNear) {
                 continue;
             }
             TitanEntity titan = OdmMod.TITAN.get().create(level);
