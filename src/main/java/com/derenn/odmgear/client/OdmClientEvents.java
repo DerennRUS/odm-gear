@@ -199,6 +199,7 @@ public final class OdmClientEvents {
         GuiGraphics g = event.getGuiGraphics();
         int cx = mc.getWindow().getGuiScaledWidth() / 2;
         int cy = mc.getWindow().getGuiScaledHeight() / 2;
+        DamagePopups.renderHud(g, mc.getWindow().getGuiScaledWidth(), mc.getWindow().getGuiScaledHeight());
         if (ODM.hasGearButDisabled(p)) {
             g.drawCenteredString(mc.font, "ODM OFF", cx, cy + 10, 0xAAAAAA);
             return;
