@@ -18,6 +18,9 @@ import net.minecraftforge.event.TickEvent;
 public final class TitanSpawner {
     static final double MIN_PLAYER_DIST = 50;
     static final double MAX_DIST = 96;
+    /** At most this many titans within CAP_RADIUS (20 chunks) of a player. */
+    static final int MAX_NEARBY = 50;
+    static final double CAP_RADIUS = 20 * 16;
     /** Chance per player per check (every 5 s). */
     static final float CHANCE = 1.0f;
 
@@ -44,6 +47,18 @@ public final class TitanSpawner {
     }
 
     private static void trySpawn(ServerLevel level, ServerPlayer near) {
+        // never more than MAX_NEARBY titans within 20 chunks of the player
+        int count = 0;
+        double r = CAP_RADIUS;
+        for (TitanEntity t : level.getEntitiesOfClass(TitanEntity.class, near.getBoundingBox().inflate(r, 512, r))) {
+            double dx = t.getX() - near.getX(), dz = t.getZ() - near.getZ();
+            if (dx * dx + dz * dz <= r * r) {
+                count++;
+            }
+        }
+        if (count >= MAX_NEARBY) {
+            return;
+        }
         for (int attempt = 0; attempt < 8; attempt++) {
             double ang = level.random.nextDouble() * Math.PI * 2;
             double dist = MIN_PLAYER_DIST + 2 + level.random.nextDouble() * (MAX_DIST - MIN_PLAYER_DIST - 2);
