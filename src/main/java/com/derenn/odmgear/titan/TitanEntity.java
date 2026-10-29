@@ -52,10 +52,10 @@ import java.util.Set;
  */
 public class TitanEntity extends Monster {
     /** Titan heights in blocks and their spawn chances. */
-    public static final float[] SIZES = {10f, 15f, 25f, 40f};
-    public static final float[] SIZE_CHANCES = {0.20f, 0.30f, 0.40f, 0.10f};
+    public static final float[] SIZES = {10f, 18f, 25f};
+    public static final float[] SIZE_CHANCES = {0.25f, 0.60f, 0.15f};
     /** Hit damage in hearts by size. */
-    public static final float[] DAMAGE_HEARTS = {4f, 7f, 11f, 17f};
+    public static final float[] DAMAGE_HEARTS = {4f, 8f, 11f};
     public static final int[] HEADS = {0, 1, 3, 4};
     public static final String[] HAIRS = {"armin", "boy1", "boy2", "boy3", "eren", "girl2", "jean", "levi", "marco", "mikasa", "mike", "petra"};
     public static final int[][] HAIR_COLORS = {
