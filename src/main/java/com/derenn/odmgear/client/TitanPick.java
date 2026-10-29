@@ -39,7 +39,7 @@ public final class TitanPick {
             cachedTime = cl.getGameTime();
             titans.clear();
             for (Entity e : cl.entitiesForRendering()) {
-                if (e instanceof TitanEntity t && t.isAlive()) {
+                if (e instanceof TitanEntity t && !t.isRemoved()) { // dead bodies stay solid until they vanish
                     titans.add(t);
                 }
             }

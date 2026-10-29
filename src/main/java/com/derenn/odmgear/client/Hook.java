@@ -144,7 +144,7 @@ public final class Hook {
             }
         } else if (state == State.HOOKED && hookedTitan != null) {
             Vec3 p = null;
-            if (!hookedTitan.isRemoved() && hookedTitan.isAlive()
+            if (!hookedTitan.isRemoved()
                     && !com.derenn.odmgear.titan.TitanGeometry.triOnDisabledArm(hookedTitan, titanTri, 1f)) {
                 p = com.derenn.odmgear.titan.TitanGeometry.surfacePoint(hookedTitan, titanTri, titanU, titanV, 1f);
             }
@@ -161,7 +161,7 @@ public final class Hook {
 
     /** Hook position for rendering (follows an animated titan smoothly between ticks). */
     public Vec3 renderPos(float partialTick) {
-        if (state == State.HOOKED && hookedTitan != null && hookedTitan.isAlive()) {
+        if (state == State.HOOKED && hookedTitan != null && !hookedTitan.isRemoved()) {
             Vec3 p = com.derenn.odmgear.titan.TitanGeometry.surfacePoint(hookedTitan, titanTri, titanU, titanV, partialTick);
             if (p != null) {
                 return p;

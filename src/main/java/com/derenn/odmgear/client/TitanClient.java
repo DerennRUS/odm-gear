@@ -205,7 +205,7 @@ public final class TitanClient {
         Vec3 look = p.getViewVector(1f);
         boolean any = false;
         for (TitanEntity t : TitanPick.titans(p.level())) {
-            if (hitThisSlash.contains(t.getId()) || t.distanceToSqr(p) > Math.pow(t.heightBlocks() * 1.5 + 12, 2)) {
+            if (!t.isAlive() || hitThisSlash.contains(t.getId()) || t.distanceToSqr(p) > Math.pow(t.heightBlocks() * 1.5 + 12, 2)) {
                 continue;
             }
             TitanGeometry.Part part = TitanGeometry.zoneHit(t, from, now, RADIUS, ZONE_BELOW, ZONE_ABOVE, look, MIN_DOT, 1f);
