@@ -40,6 +40,11 @@ public final class OdmKeys {
     }
 
     @SubscribeEvent
+    public static void registerRenderers(net.minecraftforge.client.event.EntityRenderersEvent.RegisterRenderers event) {
+        event.registerEntityRenderer(OdmMod.TITAN.get(), TitanRenderer::new);
+    }
+
+    @SubscribeEvent
     public static void register(RegisterKeyMappingsEvent event) {
         event.register(HOOK_LEFT);
         event.register(HOOK_RIGHT);

@@ -12,5 +12,7 @@
   "msg.odmgear.on": "УПМ: включено",
   "msg.odmgear.off": "УПМ: выключено",
   "item.odmgear.hook_tip": "Крюк",
-  "generator.odmgear.crags": "Рваные скалы (УПМ)"
+  "generator.odmgear.crags": "Рваные скалы (УПМ)",
+  "entity.odmgear.titan": "Титан",
+  "item.odmgear.titan_spawn_egg": "Яйцо призыва титана"
 }

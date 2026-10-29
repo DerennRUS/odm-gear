@@ -12,5 +12,7 @@
   "msg.odmgear.on": "ODM gear: ON",
   "msg.odmgear.off": "ODM gear: OFF",
   "item.odmgear.hook_tip": "Hook",
-  "generator.odmgear.crags": "ODM Crags"
+  "generator.odmgear.crags": "ODM Crags",
+  "entity.odmgear.titan": "Titan",
+  "item.odmgear.titan_spawn_egg": "Titan Spawn Egg"
 }
