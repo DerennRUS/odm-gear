@@ -176,6 +176,18 @@ public final class TitanClient {
         return sweep(p);
     }
 
+    /** Meaty slash: crit crack + heavy hit + wet cut; bigger hits sound lower and get an extra thump. */
+    private static void playNapeHitSound(int shown) {
+        net.minecraft.client.sounds.SoundManager sm = Minecraft.getInstance().getSoundManager();
+        boolean big = shown >= 1000;
+        sm.play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.PLAYER_ATTACK_CRIT, big ? 0.75f : 1.0f, 1.0f));
+        sm.play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.PLAYER_ATTACK_STRONG, big ? 0.6f : 0.85f, 1.0f));
+        sm.play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.HONEY_BLOCK_BREAK, 0.7f, 0.9f));
+        if (big) {
+            sm.play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.GENERIC_EXPLODE, 1.6f, 0.35f));
+        }
+    }
+
     /** Current speed in AoTTG units per second. */
     static float speedUnits() {
         OdmPhysics odm = OdmPhysics.INSTANCE;
@@ -203,6 +215,7 @@ public final class TitanClient {
                     double dmg = p.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE) * speed / 20.0;
                     int shown = (int) Math.round(dmg / 2.0 * 100.0);
                     DamagePopups.add(TitanGeometry.napePoint(TitanGeometry.frame(t, 1f, false)), shown);
+                    playNapeHitSound(shown);
                 }
                 any = true;
             }
