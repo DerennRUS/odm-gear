@@ -533,7 +533,11 @@ public final class OdmPhysics {
         }
         Vec3 dir = new Vec3(vel.x / hs, 0, vel.z / hs);
         double ahead = Math.max(0.6, hs * 0.3);
-        net.minecraft.world.phys.AABB bb = p.getBoundingBox().move(delta).deflate(1.0E-3);
+        // check from where we are now, lifted a little so the floor itself never counts as a ledge
+        net.minecraft.world.phys.AABB bb = p.getBoundingBox().move(0, 0.05, 0).deflate(1.0E-3);
+        if (!p.level().noCollision(p, bb)) {
+            return null;
+        }
         double hit = -1;
         for (double d = 0.25; d <= ahead + 1.0E-6; d += 0.25) {
             if (!p.level().noCollision(p, bb.move(dir.scale(d)))) {
