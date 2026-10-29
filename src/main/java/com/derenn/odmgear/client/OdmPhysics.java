@@ -60,7 +60,7 @@ public final class OdmPhysics {
     static final double DASH_DECAY = 1.7;
     /** AoTTG jump: +8 vertical velocity. */
     /** Gas-jump height on the ground, in blocks (about a vanilla jump). */
-    static final double JUMP_HEIGHT = 1.3;
+    static final double JUMP_HEIGHT = 2.6;
     /** Run speed stat 110 / 10. Landing faster than RunSpeed*sqrt(1.5) slides; slide ends below RunSpeed*1.2. */
     static final double RUN_SPEED = 11.0;
     static final double FIXED_STEP = 0.02;
@@ -79,6 +79,13 @@ public final class OdmPhysics {
 
     /** How fast reel in/out blends in (1/s), so reeling turns your momentum instead of snapping it. */
     static final double REEL_RESPONSE = 14.0;
+
+    /** In water with a hook attached the rope shortens by this fraction per second... */
+    static final double WATER_REEL_RATE = 0.30;
+    /** ...pulling with at most this acceleration (AoTTG units/s^2). */
+    static final double WATER_PULL_MAX = 50.0;
+    /** Player step height while the gear is usable (vanilla 0.6). */
+    static final float STEP_HEIGHT = 1.0f;
 
     static final int SUBSTEPS = 5;
     static final double TICK = 0.05;
@@ -105,6 +112,10 @@ public final class OdmPhysics {
     private double gravityExtra;
     private double reelOutTime;
     public boolean gasInUse;
+    /** Hooked while touching water: the rope drags us out (see WATER_REEL_RATE). */
+    private boolean waterPull;
+    private double waterRopeLength = -1;
+    private boolean stepRaised;
 
     // Input collected by OdmClientEvents between ticks
     boolean pressedLeft, pressedRight, pressedBoth, pressedGas;
@@ -159,6 +170,10 @@ public final class OdmPhysics {
     /** Called once per client tick at the end of the player tick. */
     public void tick(LocalPlayer p, Minecraft mc) {
         if (!isUsable(p)) {
+            if (stepRaised) {
+                p.setMaxUpStep(0.6f);
+                stepRaised = false;
+            }
             if (physicsActive || leftHook.state != Hook.State.IDLE || rightHook.state != Hook.State.IDLE) {
                 reset(p);
             }
@@ -167,6 +182,11 @@ public final class OdmPhysics {
         }
         double s = scale();
         boolean screen = mc.screen != null;
+        // a one-block ledge never stops you while wearing the gear
+        if (p.maxUpStep() < STEP_HEIGHT) {
+            p.setMaxUpStep(STEP_HEIGHT);
+            stepRaised = true;
+        }
 
         // ---------- input ----------
         boolean leftKey = !screen && (OdmKeys.held(OdmKeys.HOOK_LEFT) || pressedLeft);
@@ -225,7 +245,22 @@ public final class OdmPhysics {
         boolean fluid = p.isInWater() || p.isInLava() || p.onClimbable();
         boolean onGround = p.onGround();
         Vec3 center = pos.add(0, p.getBbHeight() * 0.5, 0);
-        if (fluid) {
+        boolean wasWaterPull = waterPull;
+        waterPull = p.isInWater() && anyHooked();
+        if (!waterPull) {
+            waterRopeLength = -1;
+        }
+        if (waterPull) {
+            // touching water with a hook attached: keep our physics, the rope drags us out
+            if (!physicsActive || !wasWaterPull) {
+                vel = physicsActive ? vel : measuredVel;
+            }
+            physicsActive = true;
+            sliding = false;
+            if (waterRopeLength < 0) {
+                waterRopeLength = hookTarget().distanceTo(center);
+            }
+        } else if (fluid) {
             if (physicsActive) {
                 p.setDeltaMovement(vel.scale(TICK));
             }
@@ -299,7 +334,21 @@ public final class OdmPhysics {
             double reelAxis = reelInSteps > 0 || reelInKey ? -1 : (reelOutTime > 0 || reelOutKey ? 1 : 0);
             reelSmooth = reelAxis; // instant response, as in AoTTG
 
-            if (physicsActive) {
+            if (physicsActive && waterPull && anyHooked()) {
+                // rope shortens 30% per second; pull toward the hook only as much as needed, capped at 50
+                waterRopeLength *= Math.exp(-WATER_REEL_RATE * DT);
+                Vec3 to = hookTarget().subtract(c);
+                double d = to.length();
+                Vec3 acc = new Vec3(0, -GRAVITY * s * 0.3, 0);
+                if (d > waterRopeLength && d > 1.0E-6) {
+                    Vec3 dir = to.scale(1.0 / d);
+                    double outward = Math.max(0, -vel.dot(dir));
+                    double a = Math.min(WATER_PULL_MAX * s, (d - waterRopeLength) * 30.0 + outward * 10.0);
+                    acc = acc.add(dir.scale(a));
+                }
+                vel = vel.add(acc.scale(DT)).scale(Math.exp(-1.5 * DT));
+                simPos = simPos.add(vel.scale(DT));
+            } else if (physicsActive) {
                 Vec3 acc = Vec3.ZERO;
                 boolean bothLaunched = leftHook.launch && rightHook.launch;
                 boolean pivotL = false;
@@ -435,6 +484,13 @@ public final class OdmPhysics {
             }
         }
 
+        if (physicsActive && !waterPull && !sliding) {
+            Vec3 lift = ledgeLift(p, simPos.subtract(pos));
+            if (lift != null) {
+                simPos = simPos.add(0, lift.x, 0);
+                vel = new Vec3(vel.x, Math.max(vel.y, lift.y), vel.z);
+            }
+        }
         if (physicsActive) {
             Vec3 delta = simPos.subtract(pos);
             p.setDeltaMovement(delta);
@@ -445,6 +501,47 @@ public final class OdmPhysics {
             }
         }
         lastPos = pos;
+    }
+
+    /** Average position of the attached hooks. */
+    private Vec3 hookTarget() {
+        if (leftHook.isHooked() && rightHook.isHooked()) {
+            return leftHook.pos.add(rightHook.pos).scale(0.5);
+        }
+        return leftHook.isHooked() ? leftHook.pos : rightHook.pos;
+    }
+
+    /**
+     * Flying low into a ledge at most one block high: rise smoothly so we pass over it instead of crashing.
+     * Looks 0.3 s ahead along the horizontal velocity. Returns (extra rise this tick, minimum vertical speed) or null.
+     */
+    private Vec3 ledgeLift(LocalPlayer p, Vec3 delta) {
+        double hs = Math.sqrt(vel.x * vel.x + vel.z * vel.z);
+        if (hs < 1.0) {
+            return null;
+        }
+        Vec3 dir = new Vec3(vel.x / hs, 0, vel.z / hs);
+        double ahead = Math.max(0.6, hs * 0.3);
+        net.minecraft.world.phys.AABB bb = p.getBoundingBox().move(delta).deflate(1.0E-3);
+        double hit = -1;
+        for (double d = 0.25; d <= ahead + 1.0E-6; d += 0.25) {
+            if (!p.level().noCollision(p, bb.move(dir.scale(d)))) {
+                hit = d;
+                break;
+            }
+        }
+        if (hit < 0) {
+            return null;
+        }
+        for (double h = 0.125; h <= STEP_HEIGHT + 1.0E-6; h += 0.125) {
+            if (p.level().noCollision(p, bb.move(0, h, 0)) && p.level().noCollision(p, bb.move(dir.scale(hit)).move(0, h, 0))) {
+                double t = hit / hs;
+                double vy = h / Math.max(t, TICK) + 0.5;
+                double extra = Math.max(0, vy * TICK - delta.y);
+                return new Vec3(Math.min(extra, h), vy, 0);
+            }
+        }
+        return null;
     }
 
     private static boolean blocked(double intended, double actual) {

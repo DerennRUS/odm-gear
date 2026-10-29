@@ -28,7 +28,7 @@ import java.util.Set;
 @Mod.EventBusSubscriber(modid = OdmMod.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class TitanClient {
     /** Radius of the blade zone around the player, in blocks. */
-    static final double RADIUS = 3.0;
+    static final double RADIUS = 2.0;
     /** Dead zone straight behind the camera: 90 degrees wide (the zone covers the other 270). */
     static final double REAR_CONE_DEGREES = 90.0;
     static final double MIN_DOT = Math.cos(Math.toRadians(180.0 - REAR_CONE_DEGREES / 2.0));
