@@ -209,5 +209,8 @@ public final class OdmClientEvents {
         String text = d < 0 ? "???" : String.valueOf((int) d);
         int color = d < 0 || d > range ? 0xFF6060 : 0xFFFFFF;
         g.drawCenteredString(mc.font, text, cx, cy + 10, color);
+        if (TitanClient.isCharging()) {
+            g.drawCenteredString(mc.font, "\u2694", cx, cy + 20, 0xFFD040); // blades ready
+        }
     }
 }

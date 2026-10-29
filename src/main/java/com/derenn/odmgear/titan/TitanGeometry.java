@@ -281,6 +281,61 @@ public final class TitanGeometry {
         return best;
     }
 
+    /**
+     * Swept-sphere blade zone: a sphere of the given radius moved along a->b (the player's path this tick).
+     * A hurtbox counts if it touches the zone and does not lie inside the rear cone behind the camera
+     * (dot(direction to hurtbox, look) >= minDot). Returns the highest-priority part (nape first) or null.
+     */
+    public static Part zoneHit(TitanEntity e, Vec3 a, Vec3 b, double radius, Vec3 look, double minDot, float partial) {
+        Frame f = frame(e, partial, false);
+        TitanModelData d = TitanModelData.get();
+        double[] ma = toModel(f, a);
+        double[] mb = toModel(f, b);
+        double m = radius / f.scale;
+        for (Shape s : SHAPES) {
+            if ((s.part == Part.FOREARM_L && e.armDisabled(true)) || (s.part == Part.FOREARM_R && e.armDisabled(false))) {
+                continue;
+            }
+            int bone = d.boneIndex.get(s.bone);
+            double[] ra = toRest(f.pose, bone, ma);
+            double[] rb = toRest(f.pose, bone, mb);
+            if (ra == null || rb == null) {
+                continue;
+            }
+            double t = s.box ? segmentBoxNear(ra, rb, s, m) : segmentCapsule(ra, rb, s, m);
+            if (t < 0) {
+                continue;
+            }
+            Vec3 center = bonePoint(f, s.bone, (s.x0 + s.x1) * 0.5f, (s.y0 + s.y1) * 0.5f, (s.z0 + s.z1) * 0.5f);
+            Vec3 at = a.lerp(b, t);
+            Vec3 dir = center.subtract(at);
+            double len = dir.length();
+            if (len < 1.0E-6 || dir.scale(1.0 / len).dot(look) >= minDot) {
+                return s.part;
+            }
+        }
+        return null;
+    }
+
+    /** Closest-approach parameter of a segment to a (rest-space) box if within distance m, else -1. */
+    private static double segmentBoxNear(double[] a, double[] b, Shape s, double m) {
+        double best = -1;
+        double bestD = Double.MAX_VALUE;
+        for (int i = 0; i <= 16; i++) {
+            double t = i / 16.0;
+            double x = a[0] + (b[0] - a[0]) * t, y = a[1] + (b[1] - a[1]) * t, z = a[2] + (b[2] - a[2]) * t;
+            double dx = Math.max(0, Math.max(s.x0 - x, x - s.x1));
+            double dy = Math.max(0, Math.max(s.y0 - y, y - s.y1));
+            double dz = Math.max(0, Math.max(s.z0 - z, z - s.z1));
+            double dd = dx * dx + dy * dy + dz * dz;
+            if (dd < bestD) {
+                bestD = dd;
+                best = t;
+            }
+        }
+        return bestD <= m * m ? best : -1;
+    }
+
     /** Inverse of a bone's 3x4 skin matrix applied to a model point. */
     private static double[] toRest(float[] pose, int b, double[] p) {
         int o = b * 12;
