@@ -492,6 +492,17 @@ public final class OdmPhysics {
             }
         }
         if (physicsActive) {
+            // titan bodies are solid: stop at them and slide along
+            Vec3[] hit = TitanCollision.sweep(p, pos, simPos);
+            simPos = hit[0];
+            if (hit[1] != null) {
+                double into = vel.dot(hit[1]);
+                if (into < 0) {
+                    vel = vel.subtract(hit[1].scale(into));
+                }
+            }
+        }
+        if (physicsActive) {
             Vec3 delta = simPos.subtract(pos);
             p.setDeltaMovement(delta);
             p.fallDistance = 0;

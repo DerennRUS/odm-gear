@@ -68,6 +68,45 @@ public final class TitanGeometry {
         public float cos, sin, scale;
     }
 
+    /**
+     * Solid body colliders (AoTTG2 BasicTitan0.prefab, layer 12): capsules on the torso, neck, head, arms and legs,
+     * spheres on the hands. arm: 0 = always, 1 = left forearm/hand, 2 = right forearm/hand (gone while cut off).
+     */
+    private record Collider(String bone, float x0, float y0, float z0, float x1, float y1, float z1, float r, int arm) {
+    }
+
+    private static final Collider[] COLLIDERS = {
+            new Collider("Controller.Body", 0f, 1.057f, -0.0062f, 0f, 1.2711f, -0.0062f, 0.4506f, 0),
+            new Collider("chest", 0f, 1.4261f, 0.0211f, 0f, 1.658f, 0.006f, 0.3982f, 0),
+            new Collider("neck", 0f, 2.0244f, 0.0024f, 0f, 2.0813f, 0.008f, 0.2128f, 0),
+            new Collider("head", 0f, 2.4176f, 0.0647f, 0f, 2.4754f, 0.0704f, 0.3390f, 0),
+            new Collider("upper_arm.L", 0.7589f, 1.5802f, -0.0063f, 0.3956f, 1.7515f, -0.0063f, 0.1301f, 0),
+            new Collider("upper_arm.R", -0.7589f, 1.5802f, -0.0063f, -0.3956f, 1.7515f, -0.0063f, 0.1301f, 0),
+            new Collider("forearm.L", 1.1186f, 1.4109f, 0.0094f, 0.7763f, 1.5758f, 0.0094f, 0.1153f, 1),
+            new Collider("forearm.R", -1.1186f, 1.4109f, 0.0094f, -0.7763f, 1.5758f, 0.0094f, 0.1153f, 2),
+            new Collider("hand.L.001", 1.3227f, 1.2787f, 0.0183f, 1.3227f, 1.2787f, 0.0183f, 0.1750f, 1),
+            new Collider("hand.R.001", -1.3227f, 1.2787f, 0.0183f, -1.3227f, 1.2787f, 0.0183f, 0.1750f, 2),
+            new Collider("thigh.L", 0.2983f, 0.4724f, -0.022f, 0.2852f, 0.726f, -0.022f, 0.1988f, 0),
+            new Collider("thigh.R", -0.2779f, 0.4715f, -0.0242f, -0.2501f, 0.724f, -0.0242f, 0.1988f, 0),
+            new Collider("shin.L", 0.2931f, 0.1453f, -0.022f, 0.2936f, 0.3535f, -0.022f, 0.1380f, 0),
+            new Collider("shin.R", -0.2931f, 0.1453f, -0.022f, -0.2936f, 0.3535f, -0.022f, 0.1380f, 0),
+    };
+
+    /** World-space body capsules {x0, y0, z0, x1, y1, z1, radius} of a titan in its current pose. */
+    public static java.util.List<double[]> bodyCapsules(TitanEntity e, float partial) {
+        Frame f = frame(e, partial, false);
+        java.util.List<double[]> out = new java.util.ArrayList<>(COLLIDERS.length);
+        for (Collider c : COLLIDERS) {
+            if ((c.arm == 1 && e.armDisabled(true)) || (c.arm == 2 && e.armDisabled(false))) {
+                continue;
+            }
+            Vec3 a = bonePoint(f, c.bone, c.x0, c.y0, c.z0);
+            Vec3 b = bonePoint(f, c.bone, c.x1, c.y1, c.z1);
+            out.add(new double[]{a.x, a.y, a.z, b.x, b.y, b.z, c.r * f.scale});
+        }
+        return out;
+    }
+
     // ------------------------------------------------------------------ frames and transforms
 
     public static Frame frame(TitanEntity e, float partial, boolean mesh) {

@@ -51,6 +51,9 @@ public final class OdmClientEvents {
             return;
         }
         ODM.tick(mc.player, mc);
+        if (!ODM.physicsActive) {
+            TitanCollision.depenetrate(mc.player);
+        }
     }
 
     /** Swallow vanilla actions that share a key with ODM controls (Q drop, E inventory, F swap...). */

@@ -1361,6 +1361,11 @@ public class TitanEntity extends Monster {
         return false;
     }
 
+    /** Titans don't shove players out of their bounding box; the body capsules are solid instead (client side). */
+    @Override
+    protected void pushEntities() {
+    }
+
     @Override
     public boolean canBreatheUnderwater() {
         return true;
