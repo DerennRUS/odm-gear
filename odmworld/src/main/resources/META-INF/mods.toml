@@ -1,0 +1,26 @@
+modLoader="javafml"
+loaderVersion="[47,)"
+license="MIT"
+
+[[mods]]
+modId="odmworld"
+version="0.1.0"
+displayName="ODM World (giant forest)"
+authors="DerennRUS"
+description='''
+A world type with a single biome: gentle fields covered by a forest of 100-block giant trees.
+'''
+
+[[dependencies.odmworld]]
+    modId="forge"
+    mandatory=true
+    versionRange="[47,)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.odmworld]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="[1.20.1,1.21)"
+    ordering="NONE"
+    side="BOTH"

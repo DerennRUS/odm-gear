@@ -41,10 +41,27 @@ jobs:
           ls -la run/terrain_dump || true
           grep -E "ERROR|Exception|odmgear" run/logs/latest.log | head -60 || true
 
+      - name: Build world mod (odmworld)
+        run: gradle -p odmworld build --no-daemon --stacktrace
+
+      - name: Generate world preview (Giant Forest)
+        if: contains(github.event.head_commit.message, '[world]')
+        run: |
+          mkdir -p odmworld/run
+          echo "eula=true" > odmworld/run/eula.txt
+          printf 'level-type=odmworld\\:giant_forest\nlevel-seed=odmworld\nspawn-protection=0\nonline-mode=false\nmax-tick-time=-1\n' > odmworld/run/server.properties
+          cat odmworld/run/server.properties
+          timeout 1500 gradle -p odmworld runServer --no-daemon || true
+          ls -la odmworld/run/world_dump || true
+          grep -E "ERROR|Exception|odmworld" odmworld/run/logs/latest.log | head -60 || true
+
       - name: Publish jar to the builds branch
         if: github.ref == 'refs/heads/main'
         run: |
           mkdir -p /tmp/out && cp build/libs/*.jar /tmp/out/
+          cp odmworld/build/libs/*.jar /tmp/out/ 2>/dev/null || true
+          cp -r odmworld/run/world_dump /tmp/out/ 2>/dev/null || true
+          cp odmworld/run/logs/latest.log /tmp/out/world-server.log 2>/dev/null || true
           cp -r run/terrain_dump /tmp/out/ 2>/dev/null || true
           cp run/logs/latest.log /tmp/out/server.log 2>/dev/null || true
           cd /tmp/out
