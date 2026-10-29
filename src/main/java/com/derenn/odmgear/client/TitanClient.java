@@ -36,6 +36,10 @@ public final class TitanClient {
     static final int SLASH_TICKS = 6;
 
     private static boolean charging;
+    /** Wind-up animation: 0 = rest, 1 = blade fully drawn back. */
+    private static float windUp, windUpPrev;
+    /** Ticks to draw the blade back fully. */
+    static final float WIND_UP_TICKS = 4f;
     private static boolean attackWasDown;
     private static int slashTicks;
     private static final Set<Integer> hitThisSlash = new HashSet<>();
@@ -78,6 +82,10 @@ public final class TitanClient {
 
     public static boolean isCharging() {
         return charging;
+    }
+
+    public static float windUp(float partialTick) {
+        return windUpPrev + (windUp - windUpPrev) * partialTick;
     }
 
     @SubscribeEvent
@@ -136,6 +144,8 @@ public final class TitanClient {
             charging = false;
         }
         attackWasDown = down;
+        windUpPrev = windUp;
+        windUp = charging ? Math.min(1f, windUp + 1f / WIND_UP_TICKS) : 0f;
 
         if (slashTicks > 0) {
             slashTicks--;
