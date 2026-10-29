@@ -49,7 +49,7 @@ public final class DamagePopups {
     }
 
     static final long HUD_LIFE_MS = 3000;
-    static final float HUD_SCALE = 3.0f;
+    static final float HUD_SCALE = 2.0f;
     static final float HUD_SHRINK = 1.5f;
     private static final List<HudEntry> hud = new ArrayList<>();
     private static long lastHudFrame;
@@ -132,7 +132,7 @@ public final class DamagePopups {
             double dist = at.distanceTo(cam);
             // grow with distance so the number stays readable; pop in a bit at the start
             float pop = age < 3 ? 1.6f - 0.2f * age : 1f;
-            float scale = (float) (0.03 * Math.max(1.0, dist / 6.0)) * pop;
+            float scale = (float) (0.02 * Math.max(1.0, dist / 6.0)) * pop;
             ps.pushPose();
             ps.translate(at.x - cam.x, at.y - cam.y, at.z - cam.z);
             ps.mulPose(camera.rotation());
